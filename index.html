@@ -6,6 +6,12 @@
 <title>Kingdom Quest — Sword & Spirit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Uncial+Antiqua&display=swap" rel="stylesheet"/>
+<script>
+// No external library needed - using Supabase REST API directly
+window.addEventListener('load',function(){
+  console.log('Rhema Warrior loaded!');
+});
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#0a0a0f;color:#f0e8d0;font-family:'Crimson Pro',serif;overflow-x:hidden;}
@@ -44,6 +50,12 @@ button{font-family:'Cinzel',serif;cursor:pointer;}
 @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(10px,-12px) scale(1.05);}66%{transform:translate(-8px,6px) scale(0.96);}}
 @keyframes bookGlow{0%,100%{box-shadow:0 8px 60px rgba(180,150,80,0.15),0 2px 20px rgba(0,0,0,0.6);}50%{box-shadow:0 8px 80px rgba(180,150,80,0.3),0 2px 20px rgba(0,0,0,0.6);}}
 @keyframes pageFlip{0%{opacity:0;transform:translateX(-20px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes fadeInUp{0%{opacity:0;transform:translateY(30px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{0%{opacity:0;}100%{opacity:1;}}
+@keyframes shimmerText{0%,100%{opacity:0.7;}50%{opacity:1;}}
+@keyframes swordDrop{0%{opacity:0;transform:translateY(-40px) rotate(-10deg);}70%{transform:translateY(6px) rotate(2deg);}100%{opacity:1;transform:translateY(0) rotate(0deg);}}
+@keyframes expandLine{0%{width:0;}100%{width:80px;}}
+@keyframes welcomeGlow{0%,100%{box-shadow:0 0 40px rgba(196,168,90,0.1),0 0 80px rgba(155,130,196,0.05);}50%{box-shadow:0 0 60px rgba(196,168,90,0.25),0 0 120px rgba(155,130,196,0.15);}}
 @keyframes emojiBounce{0%,100%{transform:translateY(0) scale(1);}30%{transform:translateY(-18px) scale(1.1);}60%{transform:translateY(-8px) scale(1.05);}}
 @keyframes emojiSpin{0%{transform:rotate(0deg) scale(1);}50%{transform:rotate(180deg) scale(1.15);}100%{transform:rotate(360deg) scale(1);}}
 @keyframes emojiGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(196,168,90,0.4)) scale(1);}50%{filter:drop-shadow(0 0 24px rgba(196,168,90,0.9));transform:scale(1.12);}}
@@ -71,10 +83,206 @@ select.styled{width:100%;background-color:#0d1020;border-radius:10px;padding:11p
 <body>
 <div id="app">
 
+<!-- ═══ SCREEN: AUTH (Login / Signup) ═══ -->
+<div id="screen-auth" class="screen" style="display:none;min-height:100vh;background:linear-gradient(180deg,#060410 0%,#0a0818 40%,#060612 100%);position:relative;overflow:hidden;">
+  <div class="particles" id="pts-auth"></div>
+  <div class="content" style="max-width:400px;margin:0 auto;padding:60px 24px 40px;">
+    <div style="text-align:center;margin-bottom:36px;">
+      <div style="font-size:44px;margin-bottom:12px;animation:float 3s ease-in-out infinite;">⚔️</div>
+      <div class="cinzel" style="font-size:26px;font-weight:700;color:#f5ead0;margin-bottom:6px;">Rhema Warrior</div>
+      <div class="crimson" style="font-size:14px;font-style:italic;color:rgba(200,180,140,0.6);">"Be transformed by the renewing of your mind."</div>
+      <div style="width:60px;height:1px;background:rgba(196,168,90,0.3);margin:16px auto;"></div>
+    </div>
+
+    <!-- Tab switcher -->
+    <div style="display:flex;background:rgba(255,255,255,0.04);border-radius:12px;padding:4px;margin-bottom:28px;">
+      <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.3));color:#f5ead0;font-size:13px;letter-spacing:1px;transition:all 0.2s;">Sign In</button>
+      <button id="tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;border-radius:10px;border:none;background:transparent;color:rgba(200,180,140,0.5);font-size:13px;letter-spacing:1px;transition:all 0.2s;">Create Account</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="auth-login-form">
+      <div style="margin-bottom:16px;">
+        <div class="cinzel" style="font-size:11px;color:rgba(196,168,90,0.8);letter-spacing:2px;margin-bottom:8px;">EMAIL</div>
+        <input type="email" id="login-email" placeholder="Enter your email..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:14px 16px;color:#f0e8d0;font-family:'Crimson Pro',serif;font-size:16px;outline:none;box-sizing:border-box;"/>
+      </div>
+      <div style="margin-bottom:24px;">
+        <div class="cinzel" style="font-size:11px;color:rgba(196,168,90,0.8);letter-spacing:2px;margin-bottom:8px;">PASSWORD</div>
+        <input type="password" id="login-password" placeholder="Enter your password..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:14px 16px;color:#f0e8d0;font-family:'Crimson Pro',serif;font-size:16px;outline:none;box-sizing:border-box;"/>
+      </div>
+      <button onclick="handleLogin()" style="width:100%;padding:16px;background:linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.35));border:1px solid rgba(196,168,90,0.5);border-radius:14px;color:#f5ead0;font-size:14px;letter-spacing:2px;margin-bottom:12px;">✦ Sign In</button>
+      <button onclick="handleForgotPassword()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(200,180,140,0.4);font-family:'Crimson Pro',serif;font-size:13px;cursor:pointer;">Forgot password?</button>
+    </div>
+
+    <!-- Signup form -->
+    <div id="auth-signup-form" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <div class="cinzel" style="font-size:11px;color:rgba(196,168,90,0.8);letter-spacing:2px;margin-bottom:8px;">EMAIL</div>
+        <input type="email" id="signup-email" placeholder="Enter your email..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:14px 16px;color:#f0e8d0;font-family:'Crimson Pro',serif;font-size:16px;outline:none;box-sizing:border-box;"/>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div class="cinzel" style="font-size:11px;color:rgba(196,168,90,0.8);letter-spacing:2px;margin-bottom:8px;">PASSWORD</div>
+        <input type="password" id="signup-password" placeholder="Create a password..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:14px 16px;color:#f0e8d0;font-family:'Crimson Pro',serif;font-size:16px;outline:none;box-sizing:border-box;"/>
+      </div>
+      <div style="margin-bottom:24px;">
+        <div class="cinzel" style="font-size:11px;color:rgba(196,168,90,0.8);letter-spacing:2px;margin-bottom:8px;">CONFIRM PASSWORD</div>
+        <input type="password" id="signup-confirm" placeholder="Confirm your password..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:14px 16px;color:#f0e8d0;font-family:'Crimson Pro',serif;font-size:16px;outline:none;box-sizing:border-box;"/>
+      </div>
+      <button onclick="handleSignup()" style="width:100%;padding:16px;background:linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.35));border:1px solid rgba(196,168,90,0.5);border-radius:14px;color:#f5ead0;font-size:14px;letter-spacing:2px;">✦ Create Account</button>
+    </div>
+
+    <!-- Auth message -->
+    <div id="auth-message" style="display:none;margin-top:16px;padding:12px 16px;border-radius:12px;font-family:'Crimson Pro',serif;font-size:14px;text-align:center;line-height:1.5;"></div>
+
+    <!-- Continue without account -->
+    <div style="text-align:center;margin-top:20px;">
+      <button onclick="continueAsGuest()" class="crimson" style="background:none;border:none;color:rgba(200,180,140,0.35);font-size:12px;cursor:pointer;">Continue without account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: PRAYER PARTNERS ═══ -->
+<div id="screen-prayer" class="screen">
+  <div class="particles" id="pts-prayer"></div>
+  <div class="content" style="padding:40px 20px 100px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div class="uncial" style="font-size:10px;color:rgba(155,130,196,0.7);letter-spacing:4px;margin-bottom:12px;">PRAYER PARTNERS</div>
+      <div class="cinzel" style="font-size:26px;color:#f5ead0;margin-bottom:6px;">Prayer Mailbox</div>
+      <div class="crimson" style="font-size:13px;font-style:italic;color:rgba(200,180,130,0.5);">"Where two or three gather in my name..." — Matt 18:20</div>
+      <div style="width:60px;height:1px;background:rgba(155,130,196,0.3);margin:16px auto;"></div>
+    </div>
+
+    <!-- Guest message -->
+    <div id="prayer-guest-msg" style="display:none;background:rgba(196,168,90,0.08);border:1px solid rgba(196,168,90,0.2);border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;">
+      <div style="font-size:32px;margin-bottom:10px;">🔐</div>
+      <div class="cinzel" style="font-size:14px;color:#c4a85a;margin-bottom:8px;">Account Required</div>
+      <div class="crimson" style="font-size:13px;color:rgba(200,180,140,0.7);line-height:1.6;margin-bottom:16px;">Create a free account to send and receive prayer requests with your prayer partner.</div>
+      <button onclick="showScreen('auth');switchAuthTab('signup')" style="padding:12px 24px;background:linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.3));border:1px solid rgba(196,168,90,0.5);border-radius:12px;color:#f5ead0;font-size:13px;letter-spacing:1px;cursor:pointer;">✦ Create Free Account</button>
+    </div>
+
+    <!-- Logged in content -->
+    <div id="prayer-content" style="display:none;">
+
+      <!-- Partner status -->
+      <div id="partner-status-card" style="margin-bottom:20px;"></div>
+
+      <!-- Invite section -->
+      <div id="invite-section" style="background:rgba(155,130,196,0.1);border:1px solid rgba(155,130,196,0.25);border-radius:16px;padding:18px 20px;margin-bottom:20px;">
+        <div class="cinzel" style="font-size:12px;color:#9b82c4;letter-spacing:1px;margin-bottom:8px;">💌 INVITE A PRAYER PARTNER</div>
+        <div class="crimson" style="font-size:13px;color:rgba(200,180,140,0.7);line-height:1.5;margin-bottom:14px;">Send a unique invite link to a friend. When they join using your link you'll be connected as prayer partners.</div>
+        <button onclick="generateInviteLink()" style="width:100%;padding:12px;background:rgba(155,130,196,0.2);border:1px solid rgba(155,130,196,0.4);border-radius:12px;color:#c4b2e8;font-family:'Cinzel',serif;font-size:13px;cursor:pointer;letter-spacing:1px;">✦ Generate Invite Link</button>
+        <div id="invite-link-box" style="display:none;margin-top:12px;">
+          <div id="invite-link-text" class="crimson" style="background:rgba(255,255,255,0.04);border:1px solid rgba(155,130,196,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:rgba(200,180,220,0.8);word-break:break-all;margin-bottom:8px;"></div>
+          <button onclick="copyInviteLink()" style="width:100%;padding:10px;background:rgba(155,130,196,0.15);border:1px solid rgba(155,130,196,0.3);border-radius:10px;color:#9b82c4;font-family:'Cinzel',serif;font-size:12px;cursor:pointer;">📋 Copy Link</button>
+        </div>
+      </div>
+
+      <!-- Send prayer request -->
+      <div id="send-prayer-section" style="background:rgba(196,168,90,0.08);border:1px solid rgba(196,168,90,0.2);border-radius:16px;padding:18px 20px;margin-bottom:20px;">
+        <div class="cinzel" style="font-size:12px;color:#c4a85a;letter-spacing:1px;margin-bottom:14px;">🙏 SEND A PRAYER REQUEST</div>
+        <div class="crimson" style="font-size:13px;color:rgba(200,180,140,0.7);margin-bottom:8px;">Your prayer request:</div>
+        <textarea id="new-prayer-request" rows="4" placeholder="Share what you need your partner to pray with you about..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.3);border-radius:12px;padding:12px 14px;color:#e8d8b0;font-family:'Crimson Pro',serif;font-size:14px;resize:none;outline:none;line-height:1.6;box-sizing:border-box;margin-bottom:12px;"></textarea>
+        <div class="crimson" style="font-size:13px;color:rgba(200,180,140,0.7);margin-bottom:8px;">Scripture for your partner to pray over you:</div>
+        <input type="text" id="new-prayer-scripture-ref" placeholder="e.g. Isaiah 41:10" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.2);border-radius:10px;padding:10px 14px;color:#e8d8b0;font-family:'Crimson Pro',serif;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:8px;"/>
+        <textarea id="new-prayer-scripture-text" rows="2" placeholder="Scripture text..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(196,168,90,0.2);border-radius:10px;padding:10px 14px;color:#e8d8b0;font-family:'Crimson Pro',serif;font-size:14px;resize:none;outline:none;line-height:1.5;box-sizing:border-box;margin-bottom:14px;"></textarea>
+        <button onclick="sendPrayerRequest()" style="width:100%;padding:14px;background:linear-gradient(135deg,rgba(196,168,90,0.35),rgba(155,130,196,0.25));border:1px solid rgba(196,168,90,0.4);border-radius:12px;color:#f5ead0;font-family:'Cinzel',serif;font-size:13px;letter-spacing:1px;cursor:pointer;">📬 Send Prayer Request</button>
+      </div>
+
+      <!-- Received prayer requests -->
+      <div>
+        <div class="section-label" style="color:rgba(155,130,196,0.6);">📩 RECEIVED PRAYER REQUESTS</div>
+        <div id="received-requests-list"></div>
+      </div>
+
+      <!-- Sent prayer requests -->
+      <div style="margin-top:20px;">
+        <div class="section-label" style="color:rgba(196,168,90,0.6);">📤 SENT PRAYER REQUESTS</div>
+        <div id="sent-requests-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: WELCOME ═══ -->
+<div id="screen-welcome" class="screen active" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;background:linear-gradient(180deg,#060410 0%,#0a0818 40%,#060612 100%);position:relative;overflow:hidden;">
+  <div class="particles" id="pts-welcome"></div>
+
+  <!-- Background glow orbs -->
+  <div style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(155,130,196,0.08) 0%,transparent 70%);pointer-events:none;animation:welcomeGlow 5s ease-in-out infinite;"></div>
+  <div style="position:absolute;bottom:10%;left:50%;transform:translateX(-50%);width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(196,168,90,0.06) 0%,transparent 70%);pointer-events:none;animation:welcomeGlow 5s ease-in-out infinite 2s;"></div>
+
+  <div class="content" style="max-width:380px;width:100%;position:relative;">
+
+    <!-- Sword icon -->
+    <div id="w-sword" style="font-size:56px;margin-bottom:20px;opacity:0;animation:swordDrop 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s forwards;">⚔️</div>
+
+    <!-- App name -->
+    <div id="w-subtitle" class="uncial" style="font-size:11px;color:rgba(196,168,90,0.7);letter-spacing:5px;margin-bottom:14px;opacity:0;animation:fadeInUp 0.7s ease 0.9s forwards;">KINGDOM QUEST</div>
+
+    <div id="w-title" class="cinzel" style="font-size:36px;font-weight:700;color:#f5ead0;line-height:1.15;margin-bottom:6px;opacity:0;animation:fadeInUp 0.7s ease 1.1s forwards;">
+      Sword &amp; Spirit
+    </div>
+
+    <!-- Divider line -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:18px auto;">
+      <div id="w-line-l" style="height:1px;background:linear-gradient(90deg,transparent,rgba(196,168,90,0.5));width:0;animation:expandLine 0.8s ease 1.5s forwards;"></div>
+      <div style="font-size:14px;color:rgba(196,168,90,0.6);opacity:0;animation:fadeIn 0.5s ease 1.6s forwards;">✦</div>
+      <div id="w-line-r" style="height:1px;background:linear-gradient(90deg,rgba(196,168,90,0.5),transparent);width:0;animation:expandLine 0.8s ease 1.5s forwards;"></div>
+    </div>
+
+    <!-- Tagline -->
+    <div id="w-tagline" class="crimson" style="font-size:18px;font-style:italic;color:rgba(220,200,160,0.85);line-height:1.7;margin-bottom:10px;opacity:0;animation:fadeInUp 0.7s ease 1.7s forwards;">
+      A faith-based journey to renew your mind,<br/>capture every lie, and wield the living Word.
+    </div>
+
+    <!-- Scripture -->
+    <div id="w-scripture" class="crimson" style="font-size:13px;color:rgba(196,168,90,0.75);margin-bottom:40px;line-height:1.6;opacity:0;animation:fadeInUp 0.7s ease 1.9s forwards;">
+      "Be transformed by the renewing of your mind." <br/>— Romans 12:2
+    </div>
+
+    <!-- Feature pills -->
+    <div id="w-pills" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:44px;opacity:0;animation:fadeInUp 0.7s ease 2.1s forwards;">
+      <div class="crimson" style="background:rgba(155,130,196,0.12);border:1px solid rgba(155,130,196,0.3);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(200,180,220,0.8);">⚔️ Spiritual Warfare</div>
+      <div class="crimson" style="background:rgba(196,168,90,0.1);border:1px solid rgba(196,168,90,0.25);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(220,200,150,0.8);">📖 Scripture Battles</div>
+      <div class="crimson" style="background:rgba(107,175,154,0.1);border:1px solid rgba(107,175,154,0.25);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(160,210,190,0.8);">🧠 Mind Renewal</div>
+      <div class="crimson" style="background:rgba(212,130,122,0.1);border:1px solid rgba(212,130,122,0.25);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(220,170,165,0.8);">💜 Healing Journey</div>
+      <div class="crimson" style="background:rgba(180,120,170,0.1);border:1px solid rgba(180,120,170,0.25);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(210,170,205,0.8);">🏆 Identity Growth</div>
+    </div>
+
+    <!-- CTA Button -->
+    <button id="w-cta" onclick="startWelcome()" style="width:100%;padding:20px;background:linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.35));border:1px solid rgba(196,168,90,0.55);border-radius:16px;color:#f5ead0;font-family:'Cinzel',serif;font-size:16px;letter-spacing:2px;cursor:pointer;opacity:0;animation:fadeInUp 0.7s ease 2.3s forwards,glow 2.5s ease-in-out infinite 3s;transition:transform 0.2s;">
+      ✦ Begin Your Quest
+    </button>
+
+    <!-- Returning user link -->
+    <div id="w-returning" style="margin-top:16px;opacity:0;animation:fadeIn 0.7s ease 2.6s forwards;">
+      <button onclick="skipToAvatarIfReturning()" class="crimson" style="background:none;border:none;color:rgba(200,180,140,0.45);font-size:12px;cursor:pointer;letter-spacing:1px;">
+        Already have an account? Sign in
+      </button>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="margin-top:28px;opacity:0;animation:fadeIn 0.7s ease 2.9s forwards;">
+      <div class="crimson" style="font-size:11px;color:rgba(200,180,140,0.35);line-height:1.6;margin-bottom:12px;padding:0 10px;">
+        ⚠️ This app is for spiritual reflection and is not a substitute for therapy, medical care, or emergency support. If you are in crisis, please call or text <strong style="color:rgba(212,130,122,0.6);">988</strong>.
+      </div>
+      <div style="display:flex;justify-content:center;gap:20px;">
+        <button onclick="showLegal('privacy')" class="crimson" style="background:none;border:none;color:rgba(200,180,140,0.35);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;">Privacy Policy</button>
+        <span style="color:rgba(200,180,140,0.2);font-size:11px;">·</span>
+        <button onclick="showLegal('terms')" class="crimson" style="background:none;border:none;color:rgba(200,180,140,0.35);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;">Terms of Use</button>
+        <span style="color:rgba(200,180,140,0.2);font-size:11px;">·</span>
+        <button onclick="showLegal('disclaimer')" class="crimson" style="background:none;border:none;color:rgba(200,180,140,0.35);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;">Disclaimer</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ═══ SCREEN: AVATAR CREATION ═══ -->
-<div id="screen-avatar" class="screen active">
+<div id="screen-avatar" class="screen" style="display:none;">
   <div class="particles" id="pts-avatar"></div>
-  <div class="content" style="max-width:400px;margin:0 auto;padding:48px 24px 0;">
+  <div class="content" style="max-width:400px;margin:0 auto;padding:48px 24px 60px;">
     <div style="text-align:center;margin-bottom:40px;">
       <div class="uncial" style="font-size:10px;color:rgba(180,160,220,0.7);letter-spacing:4px;margin-bottom:14px;">KINGDOM QUEST</div>
       <div class="cinzel" style="font-size:28px;font-weight:700;color:#f5ead0;line-height:1.2;margin-bottom:10px;">Forge Your Identity</div>
@@ -331,9 +539,17 @@ select.styled{width:100%;background-color:#0d1020;border-radius:10px;padding:11p
       <div class="cinzel" style="font-size:20px;color:#f0e8d8;line-height:1.3;margin-bottom:6px;">Draw the Sword of the Spirit</div>
       <div class="crimson" style="font-size:13px;font-style:italic;color:rgba(200,180,140,0.6);">"The sword of the Spirit, which is the word of God." — Eph 6:17</div>
     </div>
-    <div id="battle-source-label" style="border-radius:12px;padding:10px 16px;margin-bottom:22px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+    <div id="battle-source-label" style="border-radius:12px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
       <div id="battle-source-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"></div>
       <div class="crimson" id="battle-source-text" style="font-size:13px;color:rgba(200,180,130,0.8);font-style:italic;"></div>
+    </div>
+    <!-- AI Personalized Scriptures -->
+    <div id="ai-scripture-box" style="background:rgba(155,130,196,0.1);border:1px solid rgba(155,130,196,0.25);border-radius:14px;padding:14px 16px;margin-bottom:20px;">
+      <div class="cinzel" style="font-size:11px;color:#9b82c4;margin-bottom:6px;letter-spacing:1px;">✦ AI-POWERED SCRIPTURE</div>
+      <div class="crimson" style="font-size:12px;color:rgba(200,180,140,0.6);margin-bottom:12px;line-height:1.5;">Get 3 scriptures chosen specifically for your thought and root cause.</div>
+      <button id="ai-fetch-btn" onclick="fetchAIScriptures()" style="padding:10px 18px;background:rgba(155,130,196,0.2);border:1px solid rgba(155,130,196,0.4);border-radius:10px;color:#c4b2e8;font-family:'Cinzel',serif;font-size:12px;cursor:pointer;letter-spacing:1px;">✦ Sharpen My Sword</button>
+      <div id="ai-loading" style="display:none;font-family:'Crimson Pro',serif;font-size:13px;color:#9b82c4;font-style:italic;animation:pulse 1.5s infinite;">Searching the eternal Word… 🙏</div>
+      <div id="ai-error" style="display:none;font-family:'Crimson Pro',serif;font-size:12px;color:#d4827a;margin-top:8px;"></div>
     </div>
     <div id="scripture-list"></div>
     <button id="wield-btn" onclick="wieldTruth()" style="width:100%;padding:18px;border:1px solid rgba(255,255,255,0.08);border-radius:14px;background:rgba(255,255,255,0.04);color:rgba(200,180,140,0.3);font-size:15px;letter-spacing:2px;cursor:default;" disabled>⚔ Wield This Truth</button>
@@ -488,6 +704,80 @@ select.styled{width:100%;background-color:#0d1020;border-radius:10px;padding:11p
     </div>
   </div>
 </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY: LEGAL PAGES ═══ -->
+<div id="legal-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:#06040f;overflow-y:auto;">
+  <div style="max-width:420px;margin:0 auto;padding:40px 24px 80px;position:relative;">
+
+    <button onclick="closeLegal()" style="position:sticky;top:16px;float:right;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:50%;width:40px;height:40px;color:rgba(200,180,140,0.7);font-size:18px;cursor:pointer;z-index:10;margin-bottom:16px;">✕</button>
+
+    <!-- PRIVACY POLICY -->
+    <div id="legal-privacy" style="display:none;">
+      <div class="uncial" style="font-size:9px;color:rgba(196,168,90,0.6);letter-spacing:4px;margin-bottom:12px;">RHEMA WARRIOR</div>
+      <div class="cinzel" style="font-size:24px;color:#f5ead0;margin-bottom:6px;">Privacy Policy</div>
+      <div class="crimson" style="font-size:12px;color:rgba(200,180,130,0.5);margin-bottom:28px;font-style:italic;">Last updated: January 2025</div>
+      <div style="height:1px;background:rgba(196,168,90,0.2);margin-bottom:28px;"></div>
+      <div class="crimson" style="font-size:14px;color:rgba(220,200,160,0.85);line-height:1.85;">
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">1. Introduction</div>Rhema Warrior ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard information when you use our application at rhemawarrior.netlify.app.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">2. Information We Collect</div><strong style="color:#e8d8b0;">Information you provide:</strong> When you create an avatar, we collect your chosen name and calling archetype. When you use the app, we store your journal entries, scripture selections, and declarations locally on your device.<br/><br/><strong style="color:#e8d8b0;">Automatically collected:</strong> We collect basic usage data such as login dates for your streak tracker. This data is stored locally on your device using browser localStorage and is not transmitted to our servers.<br/><br/><strong style="color:#e8d8b0;">We do NOT collect:</strong> Your real name, email address, phone number, location data, or any personally identifiable information unless you voluntarily provide it in future account features.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">3. How We Use Your Information</div>Information stored in the app is used solely to personalize your experience, track your spiritual growth journey and streak, display your journal entries and battle history, and provide relevant scripture based on your selections.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">4. Data Storage & Security</div>All app data is currently stored locally on your device using browser localStorage. We do not transmit your personal journal entries or battle data to any external server. Future account features may involve cloud storage, at which point this policy will be updated.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">5. Third-Party Services</div>This app uses Google Fonts for typography. Google may collect limited data per their own privacy policy. We use Netlify for hosting, which may collect standard server logs. We do not sell your data to any third parties.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">6. Children's Privacy</div>This app is not directed at children under the age of 13. We do not knowingly collect personal information from children under 13. If you are under 13, please do not use this app without parental consent.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">7. Crisis Support Data</div>If the app detects language indicating a potential crisis, it displays crisis support resources. We do not store, log, or transmit the content that triggered this detection. Your safety is our priority.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">8. Your Rights</div>You may clear all locally stored app data at any time by clearing your browser's localStorage or cookies. This will reset the app to its initial state.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">9. Contact Us</div>If you have questions about this Privacy Policy, please contact us through our feedback form or at the contact information provided on our website.</div>
+      </div>
+    </div>
+
+    <!-- TERMS OF USE -->
+    <div id="legal-terms" style="display:none;">
+      <div class="uncial" style="font-size:9px;color:rgba(196,168,90,0.6);letter-spacing:4px;margin-bottom:12px;">RHEMA WARRIOR</div>
+      <div class="cinzel" style="font-size:24px;color:#f5ead0;margin-bottom:6px;">Terms of Use</div>
+      <div class="crimson" style="font-size:12px;color:rgba(200,180,130,0.5);margin-bottom:28px;font-style:italic;">Last updated: January 2025</div>
+      <div style="height:1px;background:rgba(196,168,90,0.2);margin-bottom:28px;"></div>
+      <div class="crimson" style="font-size:14px;color:rgba(220,200,160,0.85);line-height:1.85;">
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">1. Acceptance of Terms</div>By accessing or using Rhema Warrior ("the App"), you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the App.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">2. Description of Service</div>Rhema Warrior is a faith-based spiritual wellness application designed to help users practice mind renewal through scripture, reflection, and biblical principles. The App is intended for personal spiritual growth and encouragement.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">3. Not a Substitute for Professional Care</div><strong style="color:#e8d8b0;">This App is NOT a substitute for professional mental health treatment, therapy, medical care, or emergency services.</strong> The content in this App is for spiritual encouragement only. If you are experiencing a mental health crisis, please contact a licensed professional or call 988.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">4. User Responsibilities</div>You agree to use the App only for lawful personal purposes, not attempt to reverse engineer or copy the App, not use the App to harm or deceive others, take responsibility for your own spiritual and mental wellbeing, and seek professional help when needed.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">5. Intellectual Property</div>All content within Rhema Warrior, including but not limited to the story, design, gameplay mechanics, and written content, is the intellectual property of the App creator. Scripture quotations are used for personal spiritual purposes.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">6. Disclaimer of Warranties</div>The App is provided "as is" without warranties of any kind. We do not guarantee that the App will be error-free or uninterrupted. We are not responsible for decisions you make based on content within the App.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">7. Limitation of Liability</div>To the fullest extent permitted by law, Rhema Warrior and its creator shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">8. Faith-Based Content</div>This App is built on Christian biblical principles. By using this App, you acknowledge that the content is faith-based and rooted in scripture. This App welcomes users of all backgrounds who are open to exploring biblical truth.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">9. Changes to Terms</div>We reserve the right to modify these Terms at any time. Continued use of the App after changes are posted constitutes acceptance of the updated Terms.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">10. Governing Law</div>These Terms are governed by the laws of the United States. Any disputes shall be resolved in accordance with applicable federal and state laws.</div>
+      </div>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div id="legal-disclaimer" style="display:none;">
+      <div class="uncial" style="font-size:9px;color:rgba(196,168,90,0.6);letter-spacing:4px;margin-bottom:12px;">RHEMA WARRIOR</div>
+      <div class="cinzel" style="font-size:24px;color:#f5ead0;margin-bottom:6px;">Disclaimer</div>
+      <div class="crimson" style="font-size:12px;color:rgba(200,180,130,0.5);margin-bottom:28px;font-style:italic;">Last updated: January 2025</div>
+      <div style="height:1px;background:rgba(196,168,90,0.2);margin-bottom:28px;"></div>
+      <div class="crimson" style="font-size:14px;color:rgba(220,200,160,0.85);line-height:1.85;">
+        <div style="background:rgba(212,130,122,0.1);border:1px solid rgba(212,130,122,0.3);border-left:3px solid #d4827a;border-radius:0 12px 12px 0;padding:16px 18px;margin-bottom:28px;">
+          <div class="cinzel" style="font-size:13px;color:#d4827a;margin-bottom:8px;">⚠️ Important Notice</div>
+          <div style="font-size:15px;font-weight:600;color:#f0e8d0;line-height:1.7;">This app is for spiritual reflection and is not a substitute for therapy, medical care, or emergency support.</div>
+        </div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">Spiritual Purpose Only</div>Rhema Warrior is a faith-based application designed to support spiritual growth, mind renewal, and biblical reflection. All content is grounded in Christian scripture and is intended to complement — not replace — professional care.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">Not Mental Health Treatment</div>The exercises, reflections, and content within this App are <strong style="color:#e8d8b0;">not clinical therapy, counseling, psychiatric treatment, or medical advice.</strong> If you are struggling with depression, anxiety, trauma, or any mental health condition, please seek support from a licensed mental health professional.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">Not Emergency Support</div>This App is <strong style="color:#e8d8b0;">not an emergency service.</strong> If you or someone you know is in immediate danger or experiencing a mental health crisis, please:<div style="margin-top:14px;background:rgba(107,175,154,0.1);border:1px solid rgba(107,175,154,0.3);border-radius:12px;padding:14px 16px;"><div style="margin-bottom:8px;">📞 <strong style="color:#6baf9a;">Call or Text 988</strong> — Suicide & Crisis Lifeline</div><div style="margin-bottom:8px;">💬 <strong style="color:#6baf9a;">Text HELLO to 741741</strong> — Crisis Text Line</div><div>🚨 <strong style="color:#6baf9a;">Call 911</strong> — For immediate emergencies</div></div></div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">Scripture & Biblical Content</div>Scripture references and biblical principles are shared for the purpose of spiritual encouragement and reflection. Individual application of biblical truth is a personal matter between you and God. We encourage you to seek guidance from a trusted pastor, spiritual leader, or church community.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">No Guarantees</div>While we believe deeply in the power of God's Word to transform the mind, we make no guarantee of specific spiritual, emotional, or psychological outcomes from using this App. Every person's journey is unique and in the hands of God.</div>
+        <div style="margin-bottom:22px;"><div class="cinzel" style="font-size:13px;color:#c4a85a;margin-bottom:8px;">A Word of Encouragement</div><div style="font-style:italic;color:rgba(220,200,160,0.8);line-height:1.8;">"For God has not given us a spirit of fear, but of power and of love and of a sound mind." — 2 Timothy 1:7<br/><br/>You are not alone. God sees you, loves you, and has placed people in the world to walk alongside you. Please reach out — to God, to trusted people, and to professionals when you need them.</div></div>
+      </div>
+    </div>
+
+    <button onclick="closeLegal()" style="width:100%;margin-top:20px;padding:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(200,180,140,0.6);font-family:'Crimson Pro',serif;font-size:14px;cursor:pointer;">← Back to App</button>
+  </div>
+</div>
+
 <nav id="nav" style="display:none;">
   <button onclick="showMainScreen('world')" id="nav-world" class="active">
     <div class="nav-icon">🗺</div><div class="nav-label">Kingdom</div>
@@ -500,6 +790,9 @@ select.styled{width:100%;background-color:#0d1020;border-radius:10px;padding:11p
   </button>
   <button onclick="showMainScreen('tracker')" id="nav-tracker">
     <div class="nav-icon">📅</div><div class="nav-label">Tracker</div>
+  </button>
+  <button onclick="showMainScreen('prayer')" id="nav-prayer">
+    <div class="nav-icon">💌</div><div class="nav-label">Prayer</div>
   </button>
   <button onclick="showMainScreen('throne')" id="nav-throne">
     <div class="nav-icon">🙏</div><div class="nav-label">Throne</div>
@@ -691,6 +984,7 @@ function showMainScreen(id){
   if(id==='avatar-view')refreshIdentityScreen();
   if(id==='journal')refreshJournal();
   if(id==='tracker'){makeParticles('pts-tracker',20,false);refreshTracker();}
+  if(id==='prayer')refreshPrayerScreen();
   if(id==='throne'){makeParticles('pts-throne',25,false);setCompanionLine();}
 }
 
@@ -738,6 +1032,8 @@ function confirmAvatar(){
   var name=document.getElementById('avatar-name').value.trim();
   if(!name||!state.selectedArchetype)return;
   state.avatar={name:name,archetype:state.selectedArchetype};
+  // Save to cloud if logged in
+  if(supabase&&currentUser){saveProfileToCloud(state.avatar);}
   initStorybook();
 }
 
@@ -1169,25 +1465,17 @@ function goToBattle(){
   document.getElementById('battle-source-dot').style.background=w.color;
   document.getElementById('battle-source-text').innerHTML='Scriptures for: <strong style="color:'+w.color+';">'+sourceLabel+'</strong>';
 
-  state.currentScripture=null;
-  var wieldBtn=document.getElementById('wield-btn');
-  wieldBtn.disabled=true;wieldBtn.style.background='rgba(255,255,255,0.04)';wieldBtn.style.color='rgba(200,180,140,0.3)';wieldBtn.style.border='1px solid rgba(255,255,255,0.08)';wieldBtn.style.cursor='default';
+  // Reset AI box
+  document.getElementById('ai-fetch-btn').style.display='block';
+  document.getElementById('ai-loading').style.display='none';
+  document.getElementById('ai-error').style.display='none';
+  document.getElementById('ai-scripture-box').style.borderColor='rgba(155,130,196,0.25)';
+  // Remove any previously added insight text
+  var prevInsight=document.querySelector('#ai-scripture-box div.ai-insight');
+  if(prevInsight)prevInsight.remove();
 
-  var list=document.getElementById('scripture-list');
-  list.innerHTML='';
-  scriptures.forEach(function(s){
-    var btn=document.createElement('button');
-    btn.style.cssText='width:100%;margin-bottom:14px;padding:20px;text-align:left;background:rgba(255,255,255,0.03);border:1px solid '+w.color+'33;border-radius:16px;cursor:pointer;transition:all 0.25s;';
-    btn.innerHTML=(s.power?'<div style="font-family:Uncial Antiqua,serif;font-size:9px;color:'+w.color+';letter-spacing:3px;margin-bottom:8px;">'+s.power+'</div>':'')+'<div style="font-family:Crimson Pro,serif;font-size:15px;color:#e8d8b8;line-height:1.75;margin-bottom:10px;font-style:italic;">"'+s.text+'"</div><div style="font-family:Cinzel,serif;font-size:11px;color:rgba(200,170,100,0.6);letter-spacing:1px;">— '+s.ref+'</div>';
-    btn.onclick=(function(sc,b){return function(){
-      state.currentScripture=sc;
-      list.querySelectorAll('button').forEach(function(x){x.style.background='rgba(255,255,255,0.03)';x.style.border='1px solid '+w.color+'33';x.style.animation='none';x.querySelector('div:last-child').style.color='rgba(200,170,100,0.6)';});
-      b.style.background=w.color+'22';b.style.border='1px solid '+w.color;b.style.animation='glow 2s ease-in-out infinite';
-      b.querySelector('div:last-child').style.color=w.color;
-      wieldBtn.disabled=false;wieldBtn.style.background='linear-gradient(135deg,'+w.color+'55,'+w.color+'33)';wieldBtn.style.color='#f0e8d8';wieldBtn.style.border='1px solid '+w.color;wieldBtn.style.cursor='pointer';
-    };})(s,btn);
-    list.appendChild(btn);
-  });
+  // Render curated scriptures
+  renderScriptures(scriptures,w);
   battleEl.scrollTop=0;
 }
 
@@ -1235,8 +1523,12 @@ function showSciencePopup(){
 function closeScienceAndFinish(){
   document.getElementById('overlay').classList.remove('active');
   var declaration=document.getElementById('victory-declaration').value.trim();
-  state.entries.push({thought:state.currentThought,wound:state.currentWound,rootCause:state.currentRootCause,scripture:state.currentScripture,declaration:declaration,date:new Date().toLocaleDateString(),completed:true});
-  document.getElementById('screen-victory').style.display='none';document.getElementById('screen-victory').classList.remove('active');
+  var entry={thought:state.currentThought,wound:state.currentWound,rootCause:state.currentRootCause,scripture:state.currentScripture,declaration:declaration,date:new Date().toLocaleDateString(),completed:true};
+  state.entries.push(entry);
+  // Save to cloud if logged in
+  if(supabase&&currentUser){saveEntryToCloud(entry);}
+  document.getElementById('screen-victory').style.display='none';
+  document.getElementById('screen-victory').classList.remove('active');
   document.getElementById('nav').style.display='flex';
   showMainScreen('world');
 }
@@ -1496,11 +1788,644 @@ function offerPrayer(){
 }
 
 // ═══════════════════════════════════════════════════════
+// WELCOME SCREEN
+// ═══════════════════════════════════════════════════════
+function initWelcomeScreen(){
+  makeParticles('pts-welcome',45,false);
+  // Add hover effect to CTA button
+  var btn=document.getElementById('w-cta');
+  if(btn){
+    btn.addEventListener('mouseenter',function(){this.style.transform='scale(1.02)';});
+    btn.addEventListener('mouseleave',function(){this.style.transform='scale(1)';});
+  }
+}
+
+function startWelcome(){
+  var ws=document.getElementById('screen-welcome');
+  ws.style.transition='opacity 0.5s ease';
+  ws.style.opacity='0';
+  setTimeout(function(){
+    ws.classList.remove('active');
+    ws.style.display='none';
+    ws.style.opacity='1';
+    ws.style.transition='';
+    var av=document.getElementById('screen-avatar');
+    av.style.display='block';
+    av.classList.add('active');
+    initAvatarScreen();
+    window.scrollTo(0,0);
+  },500);
+}
+
+function skipToAvatarIfReturning(){
+  // For now takes them to avatar — future: show login screen
+  startWelcome();
+}
+
+// ═══════════════════════════════════════════════════════
+// SECURE AI SCRIPTURE FETCH (via Netlify proxy)
+// ═══════════════════════════════════════════════════════
+async function fetchAIScriptures(){
+  var w=WOUNDS[state.currentWound]||WOUNDS.shame;
+  var rootLabel=state.currentRootCause?
+    ({fear:'Fear',doubt:'Doubt',unbelief:'Unbelief',shame:'Shame',
+      validation:'Validation',rejection:'Rejection',abandonment:'Abandonment',
+      loneliness:'Loneliness',peoplePleasing:'People Pleasing',
+      comparison:'Comparison',identity:'Identity',worth:'Worth',purpose:'Purpose'
+    }[state.currentRootCause]||state.currentRootCause):w.label;
+
+  // Show loading state
+  document.getElementById('ai-fetch-btn').style.display='none';
+  document.getElementById('ai-loading').style.display='block';
+  document.getElementById('ai-error').style.display='none';
+
+  try{
+    var response=await fetch('/api/ai-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        messages:[{
+          role:'user',
+          content:'You are a compassionate biblical warrior coach. Someone is in spiritual battle with this thought: "'+
+            (state.currentThought||w.lie)+'" and the root cause is: '+rootLabel+
+            '.\n\nRespond ONLY with a JSON object (no markdown):\n{"insight":"One sentence of warrior encouragement","scriptures":[{"ref":"Book Ch:V","text":"full verse text","power":"ONE WORD: what this verse releases"},{"ref":"Book Ch:V","text":"full verse text","power":"ONE WORD"},{"ref":"Book Ch:V","text":"full verse text","power":"ONE WORD"}]}'
+        }]
+      })
+    });
+
+    var data=await response.json();
+    var textBlock=data.content&&data.content.find(function(b){return b.type==='text';});
+    var text=textBlock?textBlock.text:'';
+    var parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    // Show insight
+    if(parsed.insight){
+      document.getElementById('ai-loading').style.display='none';
+      document.getElementById('ai-loading').textContent='';
+      var insightEl=document.createElement('div');
+      insightEl.style.cssText='font-family:Crimson Pro,serif;font-size:13px;color:rgba(200,180,140,0.8);font-style:italic;line-height:1.6;margin-top:4px;';
+      insightEl.textContent=parsed.insight;
+      document.getElementById('ai-scripture-box').appendChild(insightEl);
+    }
+
+    // Render AI scriptures replacing the current list
+    if(parsed.scriptures&&parsed.scriptures.length){
+      renderScriptures(parsed.scriptures,w);
+      // Update source label
+      document.getElementById('battle-source-text').innerHTML=
+        '✦ AI scriptures for: <strong style="color:'+w.color+';">'+rootLabel+'</strong>';
+    }
+
+  }catch(err){
+    document.getElementById('ai-loading').style.display='none';
+    document.getElementById('ai-fetch-btn').style.display='block';
+    document.getElementById('ai-error').style.display='block';
+    document.getElementById('ai-error').textContent='Could not load AI scriptures. Your curated scriptures are ready below.';
+  }
+}
+
+function renderScriptures(scriptures,w){
+  var list=document.getElementById('scripture-list');
+  list.innerHTML='';
+  state.currentScripture=null;
+  var wieldBtn=document.getElementById('wield-btn');
+  wieldBtn.disabled=true;
+  wieldBtn.style.background='rgba(255,255,255,0.04)';
+  wieldBtn.style.color='rgba(200,180,140,0.3)';
+  wieldBtn.style.border='1px solid rgba(255,255,255,0.08)';
+  wieldBtn.style.cursor='default';
+
+  scriptures.forEach(function(s){
+    var btn=document.createElement('button');
+    btn.style.cssText='width:100%;margin-bottom:14px;padding:20px;text-align:left;background:rgba(255,255,255,0.03);border:1px solid '+w.color+'33;border-radius:16px;cursor:pointer;transition:all 0.25s;';
+    btn.innerHTML=(s.power?'<div style="font-family:Uncial Antiqua,serif;font-size:9px;color:'+w.color+';letter-spacing:3px;margin-bottom:8px;">'+s.power+'</div>':'')+
+      '<div style="font-family:Crimson Pro,serif;font-size:15px;color:#e8d8b8;line-height:1.75;margin-bottom:10px;font-style:italic;">"'+s.text+'"</div>'+
+      '<div style="font-family:Cinzel,serif;font-size:11px;color:rgba(200,170,100,0.6);letter-spacing:1px;">— '+s.ref+'</div>';
+    btn.onclick=(function(sc,b){return function(){
+      state.currentScripture=sc;
+      list.querySelectorAll('button').forEach(function(x){
+        x.style.background='rgba(255,255,255,0.03)';
+        x.style.border='1px solid '+w.color+'33';
+        x.style.animation='none';
+      });
+      b.style.background=w.color+'22';
+      b.style.border='1px solid '+w.color;
+      b.style.animation='glow 2s ease-in-out infinite';
+      wieldBtn.disabled=false;
+      wieldBtn.style.background='linear-gradient(135deg,'+w.color+'55,'+w.color+'33)';
+      wieldBtn.style.color='#f0e8d8';
+      wieldBtn.style.border='1px solid '+w.color;
+      wieldBtn.style.cursor='pointer';
+    };})(s,btn);
+    list.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// LEGAL PAGES
+// ═══════════════════════════════════════════════════════
+function showLegal(page){
+  // Hide all legal sections first
+  document.getElementById('legal-privacy').style.display='none';
+  document.getElementById('legal-terms').style.display='none';
+  document.getElementById('legal-disclaimer').style.display='none';
+  // Show the requested one
+  document.getElementById('legal-'+page).style.display='block';
+  // Show the overlay
+  var ov=document.getElementById('legal-overlay');
+  ov.style.display='block';
+  ov.scrollTop=0;
+}
+
+function closeLegal(){
+  document.getElementById('legal-overlay').style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE CONFIG — replace with your credentials
+// ═══════════════════════════════════════════════════════
+var SUPABASE_URL='https://curvthbnpcmpixphkosa.supabase.co';
+var SUPABASE_KEY='';
+var supabase=null;
+var currentUser=null;
+var currentSession=null;
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE REST API — no library needed
+// ═══════════════════════════════════════════════════════
+function initSupabase(){
+  if(SUPABASE_URL==='YOUR_PROJECT_URL'||SUPABASE_KEY==='YOUR_PUBLISHABLE_KEY'){
+    console.log('Supabase credentials not set');
+    supabase=null;
+    return;
+  }
+  // Use direct REST API - no CDN needed
+  supabase={
+    // Auth helpers
+    auth:{
+      signIn:async function(email,password){
+        var res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+          body:JSON.stringify({email:email,password:password})
+        });
+        return res.json();
+      },
+      signUp:async function(email,password){
+        var res=await fetch(SUPABASE_URL+'/auth/v1/signup',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+          body:JSON.stringify({email:email,password:password})
+        });
+        return res.json();
+      },
+      resetPassword:async function(email){
+        await fetch(SUPABASE_URL+'/auth/v1/recover',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+          body:JSON.stringify({email:email})
+        });
+      },
+      getUser:function(){
+        var token=localStorage.getItem('rw_token');
+        var user=localStorage.getItem('rw_user');
+        if(token&&user){return{token:token,user:JSON.parse(user)};}
+        return null;
+      },
+      signOut:function(){
+        localStorage.removeItem('rw_token');
+        localStorage.removeItem('rw_user');
+      }
+    },
+    // Database helpers
+    from:function(table){
+      var token=localStorage.getItem('rw_token');
+      var headers={
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+(token||SUPABASE_KEY),
+        'Prefer':'return=representation'
+      };
+      return{
+        select:async function(cols,filter){
+          var url=SUPABASE_URL+'/rest/v1/'+table+'?select='+(cols||'*');
+          if(filter)url+='&'+filter;
+          var res=await fetch(url,{headers:headers});
+          return res.json();
+        },
+        insert:async function(data){
+          var res=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
+            method:'POST',headers:headers,body:JSON.stringify(data)
+          });
+          return res.json();
+        },
+        upsert:async function(data,conflict){
+          var h=Object.assign({},headers);
+          h['Prefer']='resolution=merge-duplicates,return=representation';
+          if(conflict)h['Prefer']+=' on_conflict='+conflict;
+          var res=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
+            method:'POST',headers:h,body:JSON.stringify(data)
+          });
+          return res.json();
+        },
+        update:async function(data,filter){
+          var url=SUPABASE_URL+'/rest/v1/'+table+'?'+filter;
+          var res=await fetch(url,{method:'PATCH',headers:headers,body:JSON.stringify(data)});
+          return res.json();
+        }
+      };
+    }
+  };
+  console.log('Supabase REST API initialized!');
+}
+
+function checkAuthAndRoute(){
+  if(!supabase||!SUPABASE_KEY||SUPABASE_KEY===''||SUPABASE_URL==='YOUR_PROJECT_URL'){
+    console.log('Supabase not ready — showing welcome screen');
+    initWelcomeScreen();return;
+  }
+  console.log('Supabase ready — checking auth...');
+  // Check for saved session in localStorage
+  var token=localStorage.getItem('rw_token');
+  var user=localStorage.getItem('rw_user');
+  var params=new URLSearchParams(window.location.search);
+  var inviteCode=params.get('invite');
+
+  if(token&&user){
+    currentUser=JSON.parse(user);
+    onUserLoggedIn();
+  }else{
+    // Show auth screen
+    document.querySelectorAll('.screen').forEach(function(s){
+      s.classList.remove('active');
+      s.style.display='none';
+    });
+    var authScreen=document.getElementById('screen-auth');
+    authScreen.style.display='block';
+    authScreen.classList.add('active');
+    makeParticles('pts-auth',25,false);
+    if(inviteCode){
+      switchAuthTab('signup');
+      showAuthMessage('Create a free account to connect with your prayer partner!',false);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH FUNCTIONS
+// ═══════════════════════════════════════════════════════
+function switchAuthTab(tab){
+  var loginForm=document.getElementById('auth-login-form');
+  var signupForm=document.getElementById('auth-signup-form');
+  var loginTab=document.getElementById('tab-login');
+  var signupTab=document.getElementById('tab-signup');
+  document.getElementById('auth-message').style.display='none';
+  if(tab==='login'){
+    loginForm.style.display='block';
+    signupForm.style.display='none';
+    loginTab.style.background='linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.3))';
+    loginTab.style.color='#f5ead0';
+    signupTab.style.background='transparent';
+    signupTab.style.color='rgba(200,180,140,0.5)';
+  }else{
+    loginForm.style.display='none';
+    signupForm.style.display='block';
+    signupTab.style.background='linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.3))';
+    signupTab.style.color='#f5ead0';
+    loginTab.style.background='transparent';
+    loginTab.style.color='rgba(200,180,140,0.5)';
+  }
+}
+
+function showAuthMessage(msg,isError){
+  var el=document.getElementById('auth-message');
+  el.textContent=msg;
+  el.style.display='block';
+  el.style.background=isError?'rgba(212,130,122,0.15)':'rgba(107,175,154,0.15)';
+  el.style.border='1px solid '+(isError?'rgba(212,130,122,0.3)':'rgba(107,175,154,0.3)');
+  el.style.color=isError?'#d4827a':'#6baf9a';
+}
+
+async function handleLogin(){
+  if(!supabase){continueAsGuest();return;}
+  var email=document.getElementById('login-email').value.trim();
+  var password=document.getElementById('login-password').value;
+  if(!email||!password){showAuthMessage('Please enter your email and password.',true);return;}
+  showAuthMessage('Signing in... ✦',false);
+  try{
+    var data=await supabase.auth.signIn(email,password);
+    if(data.error||data.error_description){showAuthMessage(data.error_description||data.error,true);return;}
+    localStorage.setItem('rw_token',data.access_token);
+    localStorage.setItem('rw_user',JSON.stringify(data.user));
+    currentUser=data.user;
+    await onUserLoggedIn();
+  }catch(e){showAuthMessage('Login failed. Please try again.',true);}
+}
+
+async function handleSignup(){
+  if(!supabase){continueAsGuest();return;}
+  var email=document.getElementById('signup-email').value.trim();
+  var password=document.getElementById('signup-password').value;
+  var confirm=document.getElementById('signup-confirm').value;
+  if(!email||!password){showAuthMessage('Please fill in all fields.',true);return;}
+  if(password!==confirm){showAuthMessage('Passwords do not match.',true);return;}
+  if(password.length<6){showAuthMessage('Password must be at least 6 characters.',true);return;}
+  showAuthMessage('Creating your account... ✦',false);
+  try{
+    var data=await supabase.auth.signUp(email,password);
+    console.log('Signup response:',JSON.stringify(data));
+    if(data.error||data.error_description||data.msg){
+      showAuthMessage(data.error_description||data.error||data.msg,true);return;
+    }
+    if(data.id||data.user){
+      showAuthMessage('✅ Account created! Check your email to verify, then sign in.',false);
+      setTimeout(function(){switchAuthTab('login');},3000);
+    }else{
+      showAuthMessage('✅ Check your email to verify your account, then sign in.',false);
+      setTimeout(function(){switchAuthTab('login');},3000);
+    }
+  }catch(e){
+    console.log('Signup error:',e);
+    showAuthMessage('Error: '+e.message,true);
+  }
+}
+
+async function handleForgotPassword(){
+  if(!supabase){return;}
+  var email=document.getElementById('login-email').value.trim();
+  if(!email){showAuthMessage('Enter your email above first.',true);return;}
+  await supabase.auth.resetPassword(email);
+  showAuthMessage('✅ Password reset email sent! Check your inbox.',false);
+}
+
+async function onUserLoggedIn(){
+  try{
+    var profiles=await supabase.from('profiles').select('*','id=eq.'+currentUser.id);
+    if(profiles&&profiles.length>0&&profiles[0].name){
+      state.avatar={
+        name:profiles[0].name,
+        archetype:{
+          id:profiles[0].archetype_id||'warrior',
+          name:profiles[0].archetype_name||'The Warrior',
+          icon:profiles[0].archetype_icon||'⚔',
+          color:profiles[0].archetype_color||'#D4827A',
+          glow:'rgba(196,168,90,0.4)'
+        }
+      };
+      await loadEntriesFromCloud();
+      await logLoginToCloud();
+      startGame();
+    }else{
+      var ws=document.getElementById('screen-auth');
+      ws.style.transition='opacity 0.5s ease';ws.style.opacity='0';
+      setTimeout(function(){
+        ws.classList.remove('active');ws.style.display='none';ws.style.opacity='1';
+        var av=document.getElementById('screen-avatar');
+        av.style.display='block';av.classList.add('active');
+        initAvatarScreen();
+      },500);
+    }
+  }catch(e){console.log('onUserLoggedIn error:',e);startGame();}
+}
+
+function continueAsGuest(){
+  var ws=document.getElementById('screen-auth');
+  ws.style.transition='opacity 0.5s ease';ws.style.opacity='0';
+  setTimeout(function(){
+    ws.classList.remove('active');ws.style.display='none';ws.style.opacity='1';
+    var wl=document.getElementById('screen-welcome');
+    wl.style.display='flex';wl.classList.add('active');
+    initWelcomeScreen();
+  },500);
+}
+
+// ═══════════════════════════════════════════════════════
+// CLOUD SAVE
+// ═══════════════════════════════════════════════════════
+async function saveProfileToCloud(avatar){
+  if(!supabase||!currentUser)return;
+  try{
+    await supabase.from('profiles').upsert({
+      id:currentUser.id,
+      name:avatar.name,
+      archetype_id:avatar.archetype.id,
+      archetype_name:avatar.archetype.name,
+      archetype_icon:avatar.archetype.icon,
+      archetype_color:avatar.archetype.color
+    },'id');
+  }catch(e){console.log('saveProfile error:',e);}
+}
+
+async function saveEntryToCloud(entry){
+  if(!supabase||!currentUser)return;
+  try{
+    await supabase.from('entries').insert({
+      user_id:currentUser.id,
+      thought:entry.thought,wound:entry.wound,
+      root_cause:entry.rootCause,
+      scripture_ref:entry.scripture?entry.scripture.ref:null,
+      scripture_text:entry.scripture?entry.scripture.text:null,
+      declaration:entry.declaration,
+      completed:entry.completed,
+      entry_date:entry.date
+    });
+  }catch(e){console.log('saveEntry error:',e);}
+}
+
+async function loadEntriesFromCloud(){
+  if(!supabase||!currentUser)return;
+  try{
+    var data=await supabase.from('entries').select('*','user_id=eq.'+currentUser.id+'&order=created_at.asc');
+    if(data&&Array.isArray(data)){
+      state.entries=data.map(function(e){
+        return{
+          thought:e.thought,wound:e.wound,rootCause:e.root_cause,
+          scripture:e.scripture_ref?{ref:e.scripture_ref,text:e.scripture_text}:null,
+          declaration:e.declaration,completed:e.completed,date:e.entry_date
+        };
+      });
+    }
+  }catch(e){console.log('loadEntries error:',e);}
+}
+
+async function logLoginToCloud(){
+  if(!supabase||!currentUser)return;
+  try{
+    var today=new Date().toISOString().split('T')[0];
+    await supabase.from('login_log').upsert({user_id:currentUser.id,login_date:today},'user_id,login_date');
+  }catch(e){console.log('logLogin error:',e);}
+}
+
+async function refreshPrayerScreen(){
+  makeParticles('pts-prayer',20,false);
+  if(!supabase||!currentUser){
+    document.getElementById('prayer-guest-msg').style.display='block';
+    document.getElementById('prayer-content').style.display='none';
+    return;
+  }
+  document.getElementById('prayer-guest-msg').style.display='none';
+  document.getElementById('prayer-content').style.display='block';
+
+  try{
+    // Check for partner
+    var partnerships=await supabase.from('prayer_partners').select('*',
+      'status=eq.accepted&or=(user_id.eq.'+currentUser.id+',partner_id.eq.'+currentUser.id+')');
+    var partnerData=partnerships&&partnerships.length>0?partnerships[0]:null;
+    var statusCard=document.getElementById('partner-status-card');
+
+    if(partnerData){
+      var partnerId=partnerData.user_id===currentUser.id?partnerData.partner_id:partnerData.user_id;
+      var partnerProfiles=await supabase.from('profiles').select('name','id=eq.'+partnerId);
+      var partnerName=(partnerProfiles&&partnerProfiles.length>0&&partnerProfiles[0].name)||'Your Partner';
+      statusCard.innerHTML='<div style="background:rgba(107,175,154,0.12);border:1px solid rgba(107,175,154,0.3);border-radius:16px;padding:16px 18px;margin-bottom:4px;display:flex;align-items:center;gap:14px;"><div style="font-size:28px;">💜</div><div><div class="cinzel" style="font-size:13px;color:#6baf9a;margin-bottom:4px;">Connected Partner</div><div class="crimson" style="font-size:15px;color:#e8d8b0;">'+partnerName+'</div><div class="crimson" style="font-size:11px;color:rgba(200,180,130,0.5);margin-top:2px;font-style:italic;">Praying together in the Kingdom ✦</div></div></div>';
+      document.getElementById('invite-section').style.display='none';
+      await loadPrayerRequests();
+    }else{
+      statusCard.innerHTML='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px 18px;margin-bottom:4px;"><div class="crimson" style="font-size:13px;color:rgba(200,180,130,0.5);font-style:italic;">No prayer partner connected yet. Generate an invite link below!</div></div>';
+      document.getElementById('send-prayer-section').style.display='none';
+    }
+    await checkPendingInvite();
+  }catch(e){console.log('refreshPrayerScreen error:',e);}
+}
+
+async function generateInviteLink(){
+  if(!supabase||!currentUser)return;
+  try{
+    var code='rw-'+currentUser.id.slice(0,8)+'-'+Math.random().toString(36).slice(2,8);
+    await supabase.from('prayer_partners').upsert({user_id:currentUser.id,invite_code:code,status:'pending'},'user_id');
+    var link=window.location.origin+'?invite='+code;
+    document.getElementById('invite-link-text').textContent=link;
+    document.getElementById('invite-link-box').style.display='block';
+  }catch(e){console.log('generateInviteLink error:',e);}
+}
+
+async function checkPendingInvite(){
+  var params=new URLSearchParams(window.location.search);
+  var inviteCode=params.get('invite');
+  if(!inviteCode||!currentUser)return;
+  try{
+    var invites=await supabase.from('prayer_partners').select('*','invite_code=eq.'+inviteCode);
+    if(invites&&invites.length>0&&invites[0].user_id!==currentUser.id){
+      await supabase.from('prayer_partners').update({partner_id:currentUser.id,status:'accepted'},'invite_code=eq.'+inviteCode);
+      window.history.replaceState({},'',window.location.pathname);
+      showPrayerNotification('🙌 You are now connected as prayer partners!');
+      await refreshPrayerScreen();
+    }
+  }catch(e){console.log('checkPendingInvite error:',e);}
+}
+
+async function sendPrayerRequest(){
+  if(!supabase||!currentUser)return;
+  var request=document.getElementById('new-prayer-request').value.trim();
+  var scriptureRef=document.getElementById('new-prayer-scripture-ref').value.trim();
+  var scriptureText=document.getElementById('new-prayer-scripture-text').value.trim();
+  if(!request){showPrayerNotification('Please write your prayer request first.',true);return;}
+  try{
+    var partnerships=await supabase.from('prayer_partners').select('*',
+      'status=eq.accepted&or=(user_id.eq.'+currentUser.id+',partner_id.eq.'+currentUser.id+')');
+    if(!partnerships||!partnerships.length){showPrayerNotification('Connect a prayer partner first!',true);return;}
+    var p=partnerships[0];
+    var recipientId=p.user_id===currentUser.id?p.partner_id:p.user_id;
+    await supabase.from('prayer_requests').insert({
+      sender_id:currentUser.id,recipient_id:recipientId,
+      request:request,scripture_ref:scriptureRef||null,scripture_text:scriptureText||null
+    });
+    document.getElementById('new-prayer-request').value='';
+    document.getElementById('new-prayer-scripture-ref').value='';
+    document.getElementById('new-prayer-scripture-text').value='';
+    showPrayerNotification('📬 Prayer request sent!');
+    await loadPrayerRequests();
+  }catch(e){showPrayerNotification('Error sending request. Try again.',true);}
+}
+
+async function loadPrayerRequests(){
+  if(!supabase||!currentUser)return;
+  try{
+    var received=await supabase.from('prayer_requests').select('*','recipient_id=eq.'+currentUser.id+'&order=created_at.desc');
+    var receivedList=document.getElementById('received-requests-list');
+    if(received&&received.length){
+      receivedList.innerHTML=received.map(function(r){
+        return '<div style="background:'+(r.is_read?'rgba(255,255,255,0.03)':'rgba(155,130,196,0.12)')+';border:1px solid rgba(155,130,196,'+(r.is_read?'0.15':'0.35')+');border-radius:16px;padding:18px;margin-bottom:14px;position:relative;">'+
+          (!r.is_read?'<div style="position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:#9b82c4;"></div>':'')+
+          '<div class="cinzel" style="font-size:10px;color:rgba(155,130,196,0.6);letter-spacing:2px;margin-bottom:8px;">'+new Date(r.created_at).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</div>'+
+          '<div class="crimson" style="font-size:15px;color:#e8d8b0;line-height:1.7;margin-bottom:12px;">'+r.request+'</div>'+
+          (r.scripture_ref?'<div style="background:rgba(196,168,90,0.1);border-left:2px solid #c4a85a;padding:10px 14px;border-radius:0 10px 10px 0;margin-bottom:12px;"><div class="crimson" style="font-size:13px;color:rgba(220,200,160,0.85);font-style:italic;">'+r.scripture_text+'</div><div class="cinzel" style="font-size:10px;color:#c4a85a;margin-top:4px;">— '+r.scripture_ref+'</div></div>':'')+
+          '<div style="display:flex;gap:10px;">'+
+          '<button onclick="markPrayed(\''+r.id+'\')" style="flex:1;padding:10px;background:'+(r.prayed_today?'rgba(107,175,154,0.25)':'rgba(255,255,255,0.04)')+';border:1px solid '+(r.prayed_today?'rgba(107,175,154,0.5)':'rgba(255,255,255,0.1)')+';border-radius:10px;color:'+(r.prayed_today?'#6baf9a':'rgba(200,180,140,0.5)')+';font-family:Cinzel,serif;font-size:11px;cursor:pointer;letter-spacing:1px;">'+(r.prayed_today?'✅ Prayed Today':'🙏 Mark as Prayed')+'</button>'+
+          '<button onclick="markRequestRead(\''+r.id+'\')" style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:rgba(200,180,140,0.4);font-family:Crimson Pro,serif;font-size:12px;cursor:pointer;">✓ Read</button>'+
+          '</div></div>';
+      }).join('');
+    }else{
+      receivedList.innerHTML='<div class="crimson" style="font-size:13px;color:rgba(200,180,130,0.4);font-style:italic;padding:16px 0;">No prayer requests received yet.</div>';
+    }
+
+    var sent=await supabase.from('prayer_requests').select('*','sender_id=eq.'+currentUser.id+'&order=created_at.desc');
+    var sentList=document.getElementById('sent-requests-list');
+    if(sent&&sent.length){
+      sentList.innerHTML=sent.map(function(r){
+        return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(196,168,90,0.2);border-radius:16px;padding:16px 18px;margin-bottom:12px;">'+
+          '<div class="cinzel" style="font-size:10px;color:rgba(196,168,90,0.5);letter-spacing:2px;margin-bottom:6px;">Sent '+new Date(r.created_at).toLocaleDateString()+(r.is_read?' · ✓ Read':'')+'</div>'+
+          '<div class="crimson" style="font-size:14px;color:rgba(220,200,160,0.75);line-height:1.6;">'+r.request+'</div>'+
+          (r.scripture_ref?'<div class="cinzel" style="font-size:10px;color:rgba(196,168,90,0.5);margin-top:8px;">— '+r.scripture_ref+'</div>':'')+
+          '</div>';
+      }).join('');
+    }else{
+      sentList.innerHTML='<div class="crimson" style="font-size:13px;color:rgba(200,180,130,0.4);font-style:italic;padding:16px 0;">No prayer requests sent yet.</div>';
+    }
+  }catch(e){console.log('loadPrayerRequests error:',e);}
+}
+
+async function markPrayed(requestId){
+  if(!supabase)return;
+  try{
+    await supabase.from('prayer_requests').update({prayed_today:true},'id=eq.'+requestId);
+    await loadPrayerRequests();
+  }catch(e){console.log('markPrayed error:',e);}
+}
+
+async function markRequestRead(requestId){
+  if(!supabase)return;
+  try{
+    await supabase.from('prayer_requests').update({is_read:true},'id=eq.'+requestId);
+    await loadPrayerRequests();
+  }catch(e){console.log('markRequestRead error:',e);}
+}
+
+function showPrayerNotification(msg,isError){
+  var div=document.createElement('div');
+  div.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:'+(isError?'rgba(212,130,122,0.95)':'rgba(107,175,154,0.95)')+';color:#fff;font-family:Crimson Pro,serif;font-size:14px;padding:12px 20px;border-radius:20px;z-index:999;animation:slideUp 0.3s ease;max-width:320px;text-align:center;';
+  div.textContent=msg;
+  document.body.appendChild(div);
+  setTimeout(function(){div.remove();},3500);
+}
+
+// ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
+async function loadConfig(){
+  try{
+    console.log('Loading config...');
+    var res=await fetch('/api/get-config');
+    var data=await res.json();
+    if(data.supabaseKey){
+      SUPABASE_KEY=data.supabaseKey;
+      console.log('Config loaded! Key received.');
+      initSupabase();
+      checkAuthAndRoute();
+    }else{
+      console.log('No key in config response');
+      initWelcomeScreen();
+    }
+  }catch(e){
+    console.log('Config error:',e);
+    initWelcomeScreen();
+  }
+}
+
 window.onload=function(){
   logTodayVisit();
-  initAvatarScreen();
+  makeParticles('pts-auth',25,false);
+  loadConfig();
 };
 </script>
 </body>
