@@ -1,0 +1,1276 @@
+import { useState, useEffect, useRef } from "react";
+
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Uncial+Antiqua&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0a0f;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:rgba(255,255,255,0.03);}
+::-webkit-scrollbar-thumb{background:rgba(180,150,100,0.3);border-radius:2px;}
+textarea::placeholder,input::placeholder{color:rgba(200,180,140,0.35);}
+select{-webkit-appearance:none;appearance:none;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+@keyframes pulse{0%,100%{opacity:0.6;}50%{opacity:1;}}
+@keyframes darkenIn{0%{opacity:0;transform:scale(0.92);}100%{opacity:1;transform:scale(1);}}
+@keyframes slideUp{0%{opacity:0;transform:translateY(24px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes slideRight{0%{opacity:0;transform:translateX(-20px);}100%{opacity:1;transform:translateX(0);}}
+@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(180,150,80,0.2);}50%{box-shadow:0 0 28px rgba(180,150,80,0.6);}}
+@keyframes attackShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+@keyframes victoryPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+@keyframes starTwinkle{0%,100%{opacity:0.2;transform:scale(1);}50%{opacity:1;transform:scale(1.4);}}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(10px,-12px) scale(1.05);}66%{transform:translate(-8px,6px) scale(0.96);}}
+@keyframes pageFlip{0%{opacity:0;transform:rotateY(-12deg) translateX(-20px);}100%{opacity:1;transform:rotateY(0deg) translateX(0);}}
+@keyframes inkWrite{0%{opacity:0;transform:translateY(6px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes bookGlow{0%,100%{box-shadow:0 8px 60px rgba(180,150,80,0.15),0 2px 20px rgba(0,0,0,0.6);}50%{box-shadow:0 8px 80px rgba(180,150,80,0.3),0 2px 20px rgba(0,0,0,0.6);}}
+@keyframes candleFlicker{0%,100%{opacity:0.8;transform:scaleY(1);}25%{opacity:1;transform:scaleY(1.05);}75%{opacity:0.7;transform:scaleY(0.95);}}
+@keyframes avatarSelect{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+`;
+
+// ─── WOUNDS (root wound categories for battle) ───────────────────────────────
+const WOUNDS = {
+  abandonment:{label:"Abandonment",icon:"🕊",color:"#7AB5D4",dark:"#1a3a4a",lie:"You are forgotten.",attack:"A cold whisper drifts through the mist... You feel invisible, left behind.",scriptures:[{ref:"Deuteronomy 31:6",text:"Be strong and courageous. Do not be afraid or terrified, for the LORD your God goes with you; he will never leave you nor forsake you."},{ref:"Hebrews 13:5",text:"Never will I leave you; never will I forsake you. — God"},{ref:"Isaiah 49:16",text:"See, I have engraved you on the palms of my hands."}]},
+  rejection:{label:"Rejection",icon:"💜",color:"#9B82C4",dark:"#221a3a",lie:"You don't belong here.",attack:"Shadows of past wounds close in — exclusion, betrayal, the sting of not being chosen.",scriptures:[{ref:"Ephesians 1:6",text:"We are accepted in the Beloved — to the praise of His glorious grace."},{ref:"1 Peter 2:9",text:"You are a chosen people, a royal priesthood, a holy nation, God's special possession."},{ref:"Romans 8:1",text:"There is now no condemnation for those who are in Christ Jesus."}]},
+  shame:{label:"Shame",icon:"🌸",color:"#D4827A",dark:"#3a1a1a",lie:"You are too damaged to be loved.",attack:"The distorted mirror shows only your failures. The enemy whispers your history as your identity.",scriptures:[{ref:"2 Corinthians 5:17",text:"If anyone is in Christ, the new creation has come: The old has gone, the new is here!"},{ref:"Psalm 34:5",text:"Those who look to him are radiant; their faces are never covered with shame."},{ref:"Romans 8:1",text:"There is now no condemnation for those who are in Christ Jesus."}]},
+  loneliness:{label:"Fear of Loneliness",icon:"✦",color:"#6BAF9A",dark:"#0f2e25",lie:"You will always be alone.",attack:"The landscape grows silent. Fog rolls in. You feel unseen, forgotten by all — even God.",scriptures:[{ref:"Psalm 23:4",text:"Even though I walk through the darkest valley, I will fear no evil, for you are with me."},{ref:"Isaiah 41:10",text:"Do not fear, for I am with you; do not be dismayed, for I am your God."},{ref:"Matthew 28:20",text:"Surely I am with you always, to the very end of the age."}]},
+  validation:{label:"Approval & Validation",icon:"👑",color:"#C4A85A",dark:"#2e2510",lie:"Your worth comes from what others think.",attack:"Performance anxiety rises. A voice demands you earn your place — prove yourself or be nothing.",scriptures:[{ref:"Psalm 139:14",text:"I praise you because I am fearfully and wonderfully made; your works are wonderful."},{ref:"Galatians 1:10",text:"Am I now trying to win the approval of human beings, or of God?"},{ref:"Ephesians 2:10",text:"We are God's handiwork, created in Christ Jesus to do good works."}]},
+  fear:{label:"Fear",icon:"⚡",color:"#B89050",dark:"#2e2008",lie:"Something terrible is about to happen.",attack:"A creeping dread tightens around your heart. Your mind races through every worst case.",scriptures:[{ref:"Isaiah 41:10",text:"Do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you."},{ref:"2 Timothy 1:7",text:"For God has not given us a spirit of fear, but of power and of love and of a sound mind."},{ref:"Psalm 56:3",text:"When I am afraid, I put my trust in you."}]},
+  doubt:{label:"Doubt",icon:"🌀",color:"#8A9CC4",dark:"#1a2035",lie:"God won't come through this time.",attack:"The clouds of uncertainty roll in. Past prayers unanswered seem to whisper: maybe He is not real.",scriptures:[{ref:"James 1:6",text:"But when you ask, you must believe and not doubt, because the one who doubts is like a wave of the sea."},{ref:"Mark 9:24",text:"I do believe; help me overcome my unbelief!"},{ref:"Hebrews 11:1",text:"Now faith is confidence in what we hope for and assurance about what we do not see."}]},
+  unbelief:{label:"Unbelief",icon:"🕳",color:"#9A8AAA",dark:"#1e1828",lie:"God's promises are not for me.",attack:"A wall rises between you and the Father. The promises feel hollow, meant for others, not for you.",scriptures:[{ref:"Numbers 23:19",text:"God is not human, that he should lie... Does he speak and then not act? Does he promise and not fulfill?"},{ref:"Romans 4:20-21",text:"Yet Abraham did not waver through unbelief regarding the promise of God, but was strengthened in his faith."},{ref:"Matthew 21:22",text:"If you believe, you will receive whatever you ask for in prayer."}]},
+  comparison:{label:"Comparison",icon:"⚖",color:"#C4A07A",dark:"#2e2015",lie:"Everyone else has what you were meant to have.",attack:"You scroll. You look around. Something shifts — suddenly your life feels like a consolation prize.",scriptures:[{ref:"Galatians 6:4",text:"Each one should test their own actions. Then they can take pride in themselves alone, without comparing."},{ref:"Psalm 139:13-14",text:"For you created my inmost being; you knit me together in my mother's womb. I praise you because I am fearfully and wonderfully made."},{ref:"2 Corinthians 10:12",text:"When they measure themselves by themselves and compare themselves with themselves, they are not wise."}]},
+  peoplePleasing:{label:"People Pleasing",icon:"🎭",color:"#B47AAA",dark:"#2a1828",lie:"You must keep everyone happy to be safe.",attack:"The voice of others grows louder than the voice of God. Saying no feels like losing everything.",scriptures:[{ref:"Galatians 1:10",text:"Am I now trying to win the approval of human beings, or of God? If I were still trying to please people, I would not be a servant of Christ."},{ref:"Proverbs 29:25",text:"Fear of man will prove to be a snare, but whoever trusts in the LORD is kept safe."},{ref:"Colossians 3:23",text:"Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."}]},
+};
+
+// ─── ROOT CAUSE OPTIONS (for dropdown) ───────────────────────────────────────
+const ROOT_CAUSES = [
+  {value:"",label:"— Select the root of this thought —"},
+  {value:"fear",label:"Fear"},
+  {value:"doubt",label:"Doubt"},
+  {value:"unbelief",label:"Unbelief"},
+  {value:"shame",label:"Shame"},
+  {value:"validation",label:"Validation / Need for Approval"},
+  {value:"rejection",label:"Rejection"},
+  {value:"abandonment",label:"Abandonment"},
+  {value:"loneliness",label:"Loneliness"},
+  {value:"peoplePleasing",label:"People Pleasing"},
+  {value:"comparison",label:"Comparison"},
+];
+
+// ─── SCRIPTURES BY ROOT CAUSE ─────────────────────────────────────────────────
+const ROOT_CAUSE_SCRIPTURES={
+  fear:[
+    {ref:"Isaiah 41:10",text:"Do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.",power:"COURAGE"},
+    {ref:"2 Timothy 1:7",text:"For God has not given us a spirit of fear, but of power and of love and of a sound mind.",power:"POWER"},
+    {ref:"Psalm 56:3",text:"When I am afraid, I put my trust in you.",power:"TRUST"}
+  ],
+  doubt:[
+    {ref:"James 1:6",text:"But when you ask, you must believe and not doubt, because the one who doubts is like a wave of the sea, blown and tossed by the wind.",power:"FAITH"},
+    {ref:"Mark 11:24",text:"Therefore I tell you, whatever you ask for in prayer, believe that you have received it, and it will be yours.",power:"BELIEF"},
+    {ref:"Hebrews 11:1",text:"Now faith is confidence in what we hope for and assurance about what we do not see.",power:"ASSURANCE"}
+  ],
+  unbelief:[
+    {ref:"Numbers 23:19",text:"God is not human, that he should lie, nor a human being, that he should change his mind. Does he speak and then not act? Does he promise and not fulfill?",power:"CERTAINTY"},
+    {ref:"Romans 4:20-21",text:"Yet he did not waver through unbelief regarding the promise of God, but was strengthened in his faith and gave glory to God, being fully persuaded that God had power to do what he had promised.",power:"STEADFAST"},
+    {ref:"Matthew 21:22",text:"If you believe, you will receive whatever you ask for in prayer.",power:"PROMISE"}
+  ],
+  shame:[
+    {ref:"Romans 8:1",text:"Therefore, there is now no condemnation for those who are in Christ Jesus.",power:"FREEDOM"},
+    {ref:"2 Corinthians 5:17",text:"Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!",power:"NEW LIFE"},
+    {ref:"Psalm 34:5",text:"Those who look to him are radiant; their faces are never covered with shame.",power:"RADIANCE"}
+  ],
+  validation:[
+    {ref:"Galatians 1:10",text:"Am I now trying to win the approval of human beings, or of God? If I were still trying to please people, I would not be a servant of Christ.",power:"IDENTITY"},
+    {ref:"Psalm 139:14",text:"I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.",power:"WORTH"},
+    {ref:"Ephesians 2:10",text:"For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.",power:"PURPOSE"}
+  ],
+  rejection:[
+    {ref:"Ephesians 1:6",text:"We are accepted in the Beloved — to the praise of his glorious grace, which he has freely given us.",power:"ACCEPTED"},
+    {ref:"1 Peter 2:9",text:"But you are a chosen people, a royal priesthood, a holy nation, God's special possession, that you may declare the praises of him who called you.",power:"CHOSEN"},
+    {ref:"John 15:16",text:"You did not choose me, but I chose you and appointed you so that you might go and bear fruit — fruit that will last.",power:"CALLED"}
+  ],
+  abandonment:[
+    {ref:"Deuteronomy 31:6",text:"Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; he will never leave you nor forsake you.",power:"PRESENCE"},
+    {ref:"Hebrews 13:5",text:"God has said, Never will I leave you; never will I forsake you.",power:"NEARNESS"},
+    {ref:"Isaiah 49:16",text:"See, I have engraved you on the palms of my hands; your walls are ever before me.",power:"REMEMBERED"}
+  ],
+  loneliness:[
+    {ref:"Psalm 23:4",text:"Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.",power:"COMFORT"},
+    {ref:"Matthew 28:20",text:"And surely I am with you always, to the very end of the age.",power:"ALWAYS"},
+    {ref:"Psalm 68:6",text:"God sets the lonely in families, he leads out the prisoners with singing.",power:"BELONGING"}
+  ],
+  peoplePleasing:[
+    {ref:"Galatians 1:10",text:"Am I now trying to win the approval of human beings, or of God? If I were still trying to please people, I would not be a servant of Christ.",power:"FREEDOM"},
+    {ref:"Proverbs 29:25",text:"Fear of man will prove to be a snare, but whoever trusts in the LORD is kept safe.",power:"SAFETY"},
+    {ref:"Colossians 3:23",text:"Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.",power:"PURPOSE"}
+  ],
+  comparison:[
+    {ref:"Galatians 6:4",text:"Each one should test their own actions. Then they can take pride in themselves alone, without comparing themselves to someone else.",power:"UNIQUENESS"},
+    {ref:"Psalm 139:13-14",text:"For you created my inmost being; you knit me together in my mother's womb. I praise you because I am fearfully and wonderfully made.",power:"DESIGN"},
+    {ref:"2 Corinthians 10:12",text:"When they measure themselves by themselves and compare themselves with themselves, they are not wise.",power:"WISDOM"}
+  ],
+};
+
+const MIND_RENEWAL_FACTS=[
+  {
+    icon:"🧠",
+    headline:"Neuroplasticity: Your Brain Can Change",
+    science:"Research from Harvard Medical School shows the brain forms new neural pathways every time a thought pattern is repeated. When you replace a lie with scripture, you are literally rewiring your brain — a process called neuroplasticity.",
+    scripture:"Do not be conformed to this world, but be transformed by the renewing of your mind. — Romans 12:2",
+    source:"Harvard Medical School, Department of Neuroscience"
+  },
+  {
+    icon:"💡",
+    headline:"Repetition Builds New Neural Highways",
+    science:"Neuroscientist Dr. Caroline Leaf found that it takes approximately 21 days of consistent thought-replacement to begin dismantling a toxic thinking pattern. Every time you capture a lie and speak truth, you are building a stronger, healthier neural pathway.",
+    scripture:"Finally, brothers and sisters, whatever is true... think about such things. — Philippians 4:8",
+    source:"Dr. Caroline Leaf, Switch On Your Brain"
+  },
+  {
+    icon:"🔬",
+    headline:"Toxic Thoughts Physically Harm the Brain",
+    science:"Studies using MRI scans show that negative, fearful, or shame-based thought patterns increase cortisol, shrink the hippocampus, and impair memory and decision-making. God's instruction to renew the mind is not just spiritual — it is neurological protection.",
+    scripture:"For God has not given us a spirit of fear, but of power and of love and of a sound mind. — 2 Timothy 1:7",
+    source:"University of Pittsburgh, Department of Psychiatry"
+  },
+  {
+    icon:"🌱",
+    headline:"Gratitude Rewires the Brain in 21 Days",
+    science:"A study by UC Davis psychologist Dr. Robert Emmons found that consistent gratitude practice measurably increases dopamine and serotonin levels — the same pathways activated by thanksgiving and worship in the Word of God.",
+    scripture:"Give thanks in all circumstances; for this is God's will for you in Christ Jesus. — 1 Thessalonians 5:18",
+    source:"Dr. Robert Emmons, UC Davis Gratitude Research Lab"
+  },
+  {
+    icon:"⚡",
+    headline:"Meditation on Scripture Reduces Anxiety by 58%",
+    science:"A clinical study published in the Journal of Clinical Psychology found that scripture-based meditation and mindfulness practices reduced anxiety symptoms by up to 58% over 8 weeks — consistent with the peace God promises through focused thought.",
+    scripture:"You will keep in perfect peace those whose minds are steadfast, because they trust in you. — Isaiah 26:3",
+    source:"Journal of Clinical Psychology, Vol. 64"
+  },
+  {
+    icon:"🔄",
+    headline:"The Brain Believes What You Tell It",
+    science:"Research by Dr. Alia Crum at Stanford shows that the stories we repeatedly tell ourselves shape our biology — affecting hormones, immune function, and stress response. Speaking God's Word over yourself is not wishful thinking; it is scientific self-transformation.",
+    scripture:"Death and life are in the power of the tongue. — Proverbs 18:21",
+    source:"Stanford Mind and Body Lab, Dr. Alia Crum"
+  },
+  {
+    icon:"🏆",
+    headline:"Identity-Based Beliefs Change Behavior",
+    science:"Behavioral psychologist Dr. James Clear found that the most powerful transformation comes not from willpower, but from identity-level belief change. When you internalize God's Word as your identity, behavior follows automatically.",
+    scripture:"I have been crucified with Christ and I no longer live, but Christ lives in me. — Galatians 2:20",
+    source:"Dr. James Clear, Atomic Habits Research"
+  }
+];
+
+// ─── SCIENCE POPUP ─────────────────────────────────────────────────────────────
+function SciencePopup({wound,onContinue}){
+  var w=WOUNDS[wound]||WOUNDS.shame;
+  var fact=MIND_RENEWAL_FACTS[Math.floor(Math.random()*MIND_RENEWAL_FACTS.length)];
+  var [visible,setVisible]=useState(false);
+  useEffect(function(){setTimeout(function(){setVisible(true);},80);},[]);
+
+  return(
+    <div style={{
+      position:"fixed",inset:0,zIndex:500,
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:"24px",
+      background:"rgba(4,4,12,0.92)",
+      animation:visible?"darkenIn 0.4s ease":"none"
+    }}>
+      <Particles type="light" count={18}/>
+      <div style={{
+        maxWidth:400,width:"100%",position:"relative",
+        background:"linear-gradient(160deg, #0e0c1a 0%, #0a0e18 100%)",
+        border:"1px solid rgba(180,160,100,0.3)",
+        borderRadius:20,padding:"32px 28px",
+        boxShadow:"0 20px 80px rgba(0,0,0,0.7)",
+        animation:visible?"slideUp 0.5s ease 0.1s both":"none"
+      }}>
+        {/* Top accent line */}
+        <div style={{position:"absolute",top:0,left:"10%",right:"10%",height:2,background:"linear-gradient(90deg,transparent,"+w.color+",transparent)",borderRadius:2}}/>
+
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:40,marginBottom:10,animation:"float 3s ease-in-out infinite"}}>{fact.icon}</div>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:w.color,letterSpacing:4,marginBottom:10,opacity:0.8}}>SCIENCE OF THE RENEWED MIND</div>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:17,color:"#f5ead0",lineHeight:1.35,marginBottom:4}}>{fact.headline}</div>
+          <div style={{width:40,height:1,background:w.color+"55",margin:"12px auto 0"}}/>
+        </div>
+
+        {/* Science finding */}
+        <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"16px",marginBottom:16}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:8,color:"rgba(180,160,100,0.5)",letterSpacing:2,marginBottom:8}}>RESEARCH FINDING</div>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,color:"rgba(220,205,175,0.92)",lineHeight:1.75}}>{fact.science}</div>
+          <div style={{marginTop:10,fontFamily:"'Crimson Pro', serif",fontSize:11,color:"rgba(180,160,100,0.45)",fontStyle:"italic"}}>Source: {fact.source}</div>
+        </div>
+
+        {/* Scripture alignment */}
+        <div style={{background:w.color+"14",border:"1px solid "+w.color+"44",borderRadius:14,padding:"14px 16px",marginBottom:24,borderLeft:"3px solid "+w.color}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:8,color:w.color,letterSpacing:2,marginBottom:8}}>GOD SAID IT FIRST</div>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:15,fontStyle:"italic",color:"#f0e8d0",lineHeight:1.7}}>{fact.scripture}</div>
+        </div>
+
+        <button onClick={onContinue} style={{
+          width:"100%",padding:"16px",
+          background:"linear-gradient(135deg, "+w.color+"44, "+w.color+"22)",
+          border:"1px solid "+w.color+"66",
+          borderRadius:12,color:"#f5ead0",
+          fontFamily:"'Cinzel', serif",fontSize:13,
+          cursor:"pointer",letterSpacing:2,
+          boxShadow:"0 4px 20px "+w.color+"22"
+        }}>
+          ✦ Return to the Kingdom
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── DYNAMIC LEVEL DATA ────────────────────────────────────────────────────────
+var ALL_ZONES=[
+  {id:"garden",name:"The Healing Garden",icon:"🌿",desc:"Where broken things grow back to life",color:"#4a8a5a",unlockAt:0},
+  {id:"valley",name:"The Dark Valley",icon:"⚔",desc:"Face the shadows that have followed you",color:"#4a5a8a",unlockAt:0},
+  {id:"throne",name:"The Throne Room",icon:"✦",desc:"Come before the Father in worship",color:"#8a6a3a",unlockAt:0},
+  {id:"fortress",name:"The Fortress of Truth",icon:"🛡",desc:"Build your walls with God's Word",color:"#8a4a4a",unlockAt:3},
+  {id:"mountain",name:"The High Place",icon:"🏔",desc:"The view from surrender",color:"#5a5a8a",unlockAt:5},
+  {id:"river",name:"The River of Life",icon:"💧",desc:"Let the living water restore you",color:"#4a7a9a",unlockAt:8},
+  {id:"temple",name:"The Inner Temple",icon:"🕍",desc:"The secret place of the Most High",color:"#7a6a4a",unlockAt:12},
+  {id:"battlefield",name:"The Open Battlefield",icon:"🔥",desc:"Advanced warfare for seasoned warriors",color:"#9a4a3a",unlockAt:18},
+  {id:"heavens",name:"The Heavenly Realm",icon:"🌌",desc:"Walking in full spiritual authority",color:"#5a4a9a",unlockAt:25},
+  {id:"overcomer",name:"The Overcomer's Gate",icon:"🏆",desc:"For those who have conquered the lies",color:"#8a7a3a",unlockAt:35},
+];
+
+function getUnlockedZones(completedCount){
+  return ALL_ZONES.map(function(z){
+    return Object.assign({},z,{unlocked:completedCount>=z.unlockAt});
+  });
+}
+
+const AVATAR_ARCHETYPES=[
+  {id:"warrior",name:"The Warrior",icon:"⚔",desc:"Bold, courageous, fights for others",color:"#D4827A",glow:"rgba(212,130,122,0.4)"},
+  {id:"healer",name:"The Healer",icon:"🌿",desc:"Compassionate, gentle, restores the broken",color:"#6BAF9A",glow:"rgba(107,175,154,0.4)"},
+  {id:"prophet",name:"The Prophet",icon:"✦",desc:"Discerning, bold in truth, sees clearly",color:"#C4A85A",glow:"rgba(196,168,90,0.4)"},
+  {id:"intercessor",name:"The Intercessor",icon:"🙏",desc:"Prayerful, fierce in the spirit, unwavering",color:"#9B82C4",glow:"rgba(155,130,196,0.4)"},
+  {id:"scribe",name:"The Scribe",icon:"📜",desc:"Wise, studious, builds on God's Word",color:"#7AB5D4",glow:"rgba(122,181,212,0.4)"},
+];
+
+const AVATAR_NAMES=["Daughter of Light","Truth Walker","Beloved","Overcomer","Warrior of Peace"];
+const DAILY_DECLARATIONS=["I am chosen and deeply loved by the Father.","The light of Christ in me is stronger than any darkness.","I am not condemned — I am covered in grace.","God has not forgotten me. I am engraved on His hands.","I walk in freedom. The old is gone, the new has come.","I am fearfully and wonderfully made.","Greater is He who is in me than he who is in the world."];
+const COMPANION_LINES=["You are not fighting this battle alone. Heaven stands with you.","The lie feels loud right now — but Truth is louder. Speak it.","Every thought you bring captive is a victory. You are doing the work.","Breathe. God is not disappointed in you. He is for you.","This wound is not your identity. It is a place Christ wants to heal.","Scripture is your sword. Lift it. Speak it aloud.","Rest in His presence before you fight. Worship first."];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function todayIdx(){return new Date().getDate()%7;}
+
+// ─── PARTICLES ────────────────────────────────────────────────────────────────
+function Particles({type="light",count=20}){
+  const pts=useRef(Array.from({length:count},(_,i)=>({id:i,x:Math.random()*100,y:Math.random()*100,size:Math.random()*3+1,dur:Math.random()*6+4,delay:Math.random()*8,opacity:Math.random()*0.6+0.2}))).current;
+  const colors=type==="dark"?["#4a3a5a","#2a2a4a","#3a2a3a"]:["#fff8e8","#ffe0a0","#d4c080","#b8e0c0"];
+  return(
+    <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
+      {pts.map(p=>(
+        <div key={p.id} style={{position:"absolute",left:p.x+"%",top:p.y+"%",width:p.size,height:p.size,borderRadius:"50%",background:rand(colors),opacity:p.opacity,animation:"starTwinkle "+p.dur+"s ease-in-out infinite",animationDelay:p.delay+"s"}}/>
+      ))}
+    </div>
+  );
+}
+
+// ─── AVATAR CREATION ──────────────────────────────────────────────────────────
+function AvatarCreation({onComplete}){
+  const [name,setName]=useState("");
+  const [chosen,setChosen]=useState(null);
+  const [phase,setPhase]=useState(0);
+
+  function confirm(){
+    if(!name.trim()||!chosen)return;
+    onComplete({name:name.trim(),archetype:chosen});
+  }
+
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#080610 0%,#0d0a1e 50%,#060408 100%)",position:"relative",overflow:"hidden",padding:"0 0 60px"}}>
+      <Particles count={30}/>
+      <div style={{maxWidth:400,margin:"0 auto",padding:"48px 24px 0",position:"relative"}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(180,160,220,0.7)",letterSpacing:4,marginBottom:14}}>KINGDOM QUEST</div>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:28,fontWeight:700,color:"#f5ead0",lineHeight:1.2,marginBottom:10}}>Forge Your Identity</div>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:15,fontStyle:"italic",color:"rgba(200,180,140,0.6)",lineHeight:1.6}}>
+            "Before I formed you in the womb I knew you." — Jeremiah 1:5
+          </div>
+          <div style={{width:60,height:1,background:"rgba(196,168,90,0.3)",margin:"18px auto"}}/>
+        </div>
+
+        {/* Name input */}
+        <div style={{marginBottom:32}}>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:12,color:"rgba(196,168,90,0.8)",letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>Your Name, Warrior</div>
+          <input
+            value={name} onChange={e=>setName(e.target.value)}
+            placeholder="Enter your name..."
+            style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(196,168,90,0.3)",borderRadius:12,padding:"14px 16px",color:"#f0e8d0",fontFamily:"'Crimson Pro', serif",fontSize:17,outline:"none",boxSizing:"border-box"}}
+          />
+        </div>
+
+        {/* Archetype select */}
+        <div style={{marginBottom:36}}>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:12,color:"rgba(196,168,90,0.8)",letterSpacing:2,marginBottom:14,textTransform:"uppercase"}}>Choose Your Calling</div>
+          {AVATAR_ARCHETYPES.map(a=>{
+            const isSel=chosen&&chosen.id===a.id;
+            return(
+              <button key={a.id} onClick={()=>setChosen(a)} style={{
+                width:"100%",marginBottom:10,padding:"16px 18px",textAlign:"left",
+                background:isSel?"rgba(255,255,255,0.06)":"rgba(255,255,255,0.02)",
+                border:"1px solid "+(isSel?a.color+"88":a.color+"22"),
+                borderRadius:14,cursor:"pointer",display:"flex",alignItems:"center",gap:14,
+                transition:"all 0.2s",
+                boxShadow:isSel?"0 0 20px "+a.glow:"none",
+                animation:isSel?"avatarSelect 0.4s ease":"none"
+              }}>
+                <div style={{width:48,height:48,borderRadius:12,fontSize:24,display:"flex",alignItems:"center",justifyContent:"center",background:a.color+"22",border:"1px solid "+a.color+"44",flexShrink:0}}>{a.icon}</div>
+                <div>
+                  <div style={{fontFamily:"'Cinzel', serif",fontSize:14,color:isSel?a.color:"#e0d0b0",marginBottom:3}}>{a.name}</div>
+                  <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(200,180,130,0.5)",fontStyle:"italic"}}>{a.desc}</div>
+                </div>
+                {isSel&&<div style={{marginLeft:"auto",color:a.color,fontSize:18}}>✦</div>}
+              </button>
+            );
+          })}
+        </div>
+
+        <button onClick={confirm} disabled={!name.trim()||!chosen} style={{
+          width:"100%",padding:"18px",
+          background:(name.trim()&&chosen)?"linear-gradient(135deg,rgba(196,168,90,0.4),rgba(155,130,196,0.3))":"rgba(255,255,255,0.04)",
+          border:"1px solid "+((name.trim()&&chosen)?"rgba(196,168,90,0.6)":"rgba(255,255,255,0.08)"),
+          borderRadius:14,color:(name.trim()&&chosen)?"#f5ead0":"rgba(200,180,130,0.3)",
+          fontFamily:"'Cinzel', serif",fontSize:15,cursor:(name.trim()&&chosen)?"pointer":"default",
+          letterSpacing:2,transition:"all 0.3s",
+          animation:(name.trim()&&chosen)?"glow 2s ease-in-out infinite":"none"
+        }}>✦ Enter the Kingdom</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── STORYBOOK OPENING ────────────────────────────────────────────────────────
+const STORY_PAGES=[
+  {
+    lines:[
+      "In a kingdom not unlike your own,",
+      "there exists a land called Elyria —",
+      "a place that was once radiant with truth,",
+      "where the air itself carried the fragrance of light."
+    ],
+    ornament:"✦",
+    footer:"Turn the page..."
+  },
+  {
+    lines:[
+      "But something shifted.",
+      "Slowly. Silently.",
+      "The people of Elyria stopped listening to the voice of God",
+      "and began listening to the whisper of the enemy."
+    ],
+    ornament:"🌑",
+    footer:"The darkness crept in..."
+  },
+  {
+    lines:[
+      "One by one, they traded the voice of God for a lie.",
+      "They believed they were forgotten. Unloved. Too broken.",
+      "They compared themselves and found themselves lacking.",
+      "They feared what they could not control.",
+      "And the fallen world fed them lie after lie — until the lies",
+      "felt more real than the voice of God ever had."
+    ],
+    ornament:"⚡",
+    footer:"The deception spread..."
+  },
+  {
+    lines:[
+      "Now the townspeople wander in darkness —",
+      "not because the light is gone,",
+      "but because they no longer believe it is for them.",
+      "They have forgotten the Word.",
+      "They have silenced the Voice.",
+      "And the enemy grows bolder with every lie they accept."
+    ],
+    ornament:"🌫",
+    footer:"But there is one who is different..."
+  },
+  {
+    lines:[
+      "That one is YOU.",
+      "",
+      "You have been sent into Elyria",
+      "as a warrior of the renewed mind —",
+      "not to fight with swords of iron,",
+      "but with the living, breathing Word of God."
+    ],
+    ornament:"⚔",
+    footer:"Your mission begins..."
+  },
+  {
+    lines:[
+      "Here is what you must know:",
+      "",
+      "Every lie that enters your mind is an enemy dart.",
+      "Every dark thought is a deception from the fallen world.",
+      "The only shield — the only weapon — is this:",
+      "",
+      "Renew your mind with the Word of God.",
+      "Capture every lie. Make it obedient to Truth."
+    ],
+    ornament:"🛡",
+    footer:"The Word is your weapon..."
+  },
+  {
+    lines:[
+      "Each adventure in Elyria will teach you",
+      "a new way to identify the enemy's schemes,",
+      "name the root of the lie,",
+      "and wield the scripture that breaks its power.",
+      "",
+      "You will not walk this journey alone.",
+      "Heaven itself is watching.",
+      "And the Father — He has already written your victory."
+    ],
+    ornament:"✦",
+    footer:"Your story begins now..."
+  }
+];
+
+function StorybookOpening({avatar,onComplete}){
+  const [page,setPage]=useState(0);
+  const [visible,setVisible]=useState(false);
+  const [lineIdx,setLineIdx]=useState(0);
+  const current=STORY_PAGES[page];
+  const isLast=page===STORY_PAGES.length-1;
+
+  useEffect(()=>{
+    setVisible(false);setLineIdx(0);
+    var t1=setTimeout(()=>setVisible(true),120);
+    return()=>clearTimeout(t1);
+  },[page]);
+
+  useEffect(()=>{
+    if(!visible)return;
+    if(lineIdx>=current.lines.length)return;
+    var t=setTimeout(()=>setLineIdx(i=>i+1),lineIdx===0?300:220);
+    return()=>clearTimeout(t);
+  },[visible,lineIdx,current.lines.length]);
+
+  function nextPage(){
+    if(isLast){onComplete();return;}
+    setPage(p=>p+1);
+  }
+
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a0608 0%,#120e08 50%,#0a0608 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",position:"relative",overflow:"hidden"}}>
+      <Particles type="light" count={20}/>
+
+      {/* Ambient candle glow */}
+      <div style={{position:"fixed",bottom:"-20%",left:"50%",transform:"translateX(-50%)",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle, rgba(180,140,60,0.08) 0%, transparent 65%)",pointerEvents:"none",animation:"pulse 4s ease-in-out infinite"}}/>
+
+      <div style={{
+        maxWidth:380,width:"100%",position:"relative",
+        animation:visible?"pageFlip 0.5s ease both":"none"
+      }}>
+        {/* Book cover */}
+        <div style={{
+          background:"linear-gradient(160deg, #1a1308 0%, #120e06 60%, #0e0a04 100%)",
+          border:"1px solid rgba(180,150,80,0.35)",
+          borderRadius:4,
+          padding:"44px 36px 36px",
+          position:"relative",
+          animation:"bookGlow 4s ease-in-out infinite",
+          minHeight:440,
+          display:"flex",flexDirection:"column",justifyContent:"space-between"
+        }}>
+          {/* Page texture lines */}
+          <div style={{position:"absolute",left:0,top:0,bottom:0,width:6,background:"linear-gradient(90deg,rgba(0,0,0,0.4),transparent)",borderRadius:"4px 0 0 4px"}}/>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:"rgba(180,150,80,0.2)"}}/>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:"rgba(180,150,80,0.15)"}}/>
+
+          {/* Page number */}
+          <div style={{position:"absolute",top:14,right:20,fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,150,80,0.35)",letterSpacing:2}}>{page+1} of {STORY_PAGES.length}</div>
+
+          {/* Ornament */}
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:28,opacity:0.6,animation:"pulse 3s ease-in-out infinite"}}>{current.ornament}</div>
+            <div style={{width:40,height:1,background:"rgba(180,150,80,0.25)",margin:"12px auto 0"}}/>
+          </div>
+
+          {/* Story text */}
+          <div style={{flex:1}}>
+            {current.lines.map((line,i)=>(
+              <div key={i} style={{
+                fontFamily:"'Crimson Pro', serif",
+                fontSize:line===""?8:17,
+                color:line===""?"transparent":i===0&&page===4?"#f5ead0":"rgba(220,200,155,0.92)",
+                lineHeight:1.85,
+                fontStyle:"italic",
+                marginBottom:line===""?6:0,
+                fontWeight:i===0&&page===4?600:300,
+                opacity:i<lineIdx?1:0,
+                transform:i<lineIdx?"translateY(0)":"translateY(4px)",
+                transition:"opacity 0.4s ease, transform 0.4s ease"
+              }}>
+                {line||"\u00A0"}
+              </div>
+            ))}
+          </div>
+
+          {/* Footer / CTA */}
+          <div style={{marginTop:32,textAlign:"center"}}>
+            <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,150,80,0.4)",letterSpacing:2,marginBottom:16}}>
+              {current.footer}
+            </div>
+            <button onClick={nextPage} style={{
+              padding:"13px 32px",borderRadius:24,
+              border:"1px solid rgba(180,150,80,0.45)",
+              background:"rgba(180,150,80,0.1)",
+              color:"rgba(220,200,150,0.9)",
+              fontFamily:"'Cinzel', serif",fontSize:12,cursor:"pointer",
+              letterSpacing:2,transition:"all 0.25s"
+            }}>
+              {isLast?"✦ Begin Your Quest":"Turn the Page →"}
+            </button>
+          </div>
+        </div>
+
+        {/* Book shadow */}
+        <div style={{position:"absolute",bottom:-8,left:"5%",right:"5%",height:16,background:"rgba(0,0,0,0.5)",borderRadius:"50%",filter:"blur(8px)",zIndex:-1}}/>
+      </div>
+    </div>
+  );
+}
+
+// ─── DARK CLOUD ATTACK ────────────────────────────────────────────────────────
+function DarkCloudAttack({wound,onBegin}){
+  const [entered,setEntered]=useState(false);
+  useEffect(()=>{setTimeout(()=>setEntered(true),100);},[]);
+  const w=WOUNDS[wound]||WOUNDS.shame;
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px",textAlign:"center",background:"radial-gradient(ellipse at center, "+w.dark+" 0%, #050508 70%)",animation:"darkenIn 0.8s ease",position:"relative",overflow:"hidden"}}>
+      <Particles type="dark" count={30}/>
+      <div style={{position:"relative",marginBottom:40,animation:entered?"float 3s ease-in-out infinite":"none"}}>
+        <div style={{width:120,height:120,borderRadius:"50%",background:"radial-gradient(circle, "+w.dark+" 0%, #0a0510 60%, transparent 100%)",boxShadow:"0 0 60px "+w.color+"44, 0 0 120px "+w.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:48,border:"1px solid "+w.color+"44"}}>
+          <span style={{filter:"grayscale(1) brightness(0.5)",fontSize:52}}>⚡</span>
+        </div>
+        {[80,100,120].map((r,i)=>(
+          <div key={i} style={{position:"absolute",top:"50%",left:"50%",width:r+60,height:r+60,marginLeft:-(r+60)/2,marginTop:-(r+60)/2,borderRadius:"50%",border:"1px solid "+w.color+(i===0?"22":i===1?"16":"0a"),animation:"pulse "+(2+i*0.5)+"s ease-in-out infinite",animationDelay:i*0.3+"s"}}/>
+        ))}
+      </div>
+      <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:11,color:w.color,letterSpacing:4,textTransform:"uppercase",marginBottom:16,opacity:0.8}}>Enemy Attack</div>
+      <div style={{fontFamily:"'Cinzel', serif",fontSize:24,color:"#f0e8d8",marginBottom:20,lineHeight:1.35,maxWidth:320,animation:"slideUp 0.6s ease 0.3s both"}}>{w.attack}</div>
+      <div style={{fontFamily:"'Crimson Pro', serif",fontSize:20,fontStyle:"italic",color:w.color,marginBottom:40,maxWidth:280,lineHeight:1.6,animation:"slideUp 0.6s ease 0.5s both"}}>"{w.lie}"</div>
+      <button onClick={onBegin} style={{padding:"16px 36px",borderRadius:30,border:"1px solid "+w.color+"88",background:"linear-gradient(135deg, "+w.color+"22, "+w.color+"11)",color:"#f0e8d8",fontFamily:"'Cinzel', serif",fontSize:14,cursor:"pointer",letterSpacing:2,boxShadow:"0 0 24px "+w.color+"44",animation:"slideUp 0.6s ease 0.7s both, glow 2s ease-in-out infinite 1.5s"}}>
+        ⚔ Enter the Truth Chamber
+      </button>
+    </div>
+  );
+}
+
+// ─── TRUTH CHAMBER ────────────────────────────────────────────────────────────
+var BELIEF_ORIGINS=[
+  {value:"",label:"— Select where this belief came from —"},
+  {value:"childhood",label:"Childhood Experience"},
+  {value:"trauma",label:"Trauma"},
+  {value:"rejection",label:"Rejection"},
+  {value:"fear",label:"Fear"},
+  {value:"shame",label:"Shame"},
+  {value:"comparison",label:"Comparison"},
+  {value:"family",label:"Family Dynamics"},
+  {value:"churchHurt",label:"Church Hurt"},
+  {value:"betrayal",label:"Betrayal"},
+  {value:"failure",label:"Failure"},
+  {value:"socialMedia",label:"Social Media"},
+  {value:"performance",label:"Performance Pressure"},
+  {value:"loneliness",label:"Loneliness"},
+  {value:"bullying",label:"Bullying"},
+  {value:"wordsSpoken",label:"Words Spoken Over Me"},
+  {value:"abandonment",label:"Abandonment"},
+  {value:"perfectionism",label:"Perfectionism"},
+  {value:"cultural",label:"Cultural Expectations"},
+  {value:"generational",label:"Generational Patterns"},
+  {value:"other",label:"Other"},
+];
+
+function TruthChamber({wound,thought,setThought,onBack,onNext}){
+  var w=WOUNDS[wound]||WOUNDS.shame;
+  var [lieText,setLieText]=useState("");
+  var [rootCause,setRootCause]=useState("");
+  var [beliefOrigin,setBeliefOrigin]=useState("");
+  var [whoAnswer,setWhoAnswer]=useState("");
+  var [memoryAnswer,setMemoryAnswer]=useState("");
+  var [aligned,setAligned]=useState(null);
+
+  var dropStyle={
+    width:"100%",background:"rgba(255,255,255,0.04)",
+    border:"1px solid "+w.color+"44",borderRadius:10,
+    padding:"11px 14px",color:"#e0d0b0",
+    fontFamily:"'Crimson Pro', serif",fontSize:14,
+    outline:"none",cursor:"pointer",
+    backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(200,170,100,0.6)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")",
+    backgroundRepeat:"no-repeat",backgroundPosition:"right 12px center",
+    paddingRight:36
+  };
+
+  var taStyle={
+    width:"100%",background:"rgba(255,255,255,0.04)",
+    border:"1px solid "+w.color+"33",borderRadius:10,
+    padding:"10px 12px",color:"#e0d0b0",
+    fontFamily:"'Crimson Pro', serif",fontSize:14,
+    resize:"none",outline:"none",lineHeight:1.6
+  };
+
+  var cardStyle={
+    background:"rgba(255,255,255,0.03)",
+    border:"1px solid "+w.color+"33",
+    borderRadius:14,padding:"16px 18px",marginBottom:14
+  };
+
+  var labelStyle={
+    fontFamily:"'Crimson Pro', serif",fontSize:14,
+    fontWeight:600,color:"#d4c090",marginBottom:10
+  };
+
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 120px",background:"linear-gradient(160deg, #0d1220 0%, #141020 50%, #0a0d18 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles type="light" count={15}/>
+      <div style={{position:"fixed",top:"30%",left:"50%",transform:"translateX(-50%)",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle, "+w.color+"0a 0%, transparent 70%)",pointerEvents:"none"}}/>
+
+      <div style={{maxWidth:400,margin:"0 auto",position:"relative",padding:"32px 24px 0"}}>
+
+        {/* Back button */}
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",marginBottom:24,padding:0}}>
+          <span style={{color:w.color,fontSize:18,lineHeight:1}}>←</span>
+          <span style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(200,180,130,0.6)"}}>Back to the Attack</span>
+        </button>
+
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:11,color:w.color,letterSpacing:4,marginBottom:12,opacity:0.8}}>TRUTH CHAMBER</div>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:22,color:"#f0e8d8",lineHeight:1.3}}>Interrogate the Thought</div>
+          <div style={{width:60,height:1,background:w.color+"66",margin:"14px auto"}}/>
+        </div>
+
+        {/* THE THOUGHT CAPTURED — always editable */}
+        <div style={{background:w.dark+"cc",border:"1px solid "+w.color+"44",borderRadius:16,padding:"16px 20px",marginBottom:14}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:w.color,letterSpacing:3,marginBottom:10,textAlign:"center"}}>THE THOUGHT CAPTURED</div>
+          <textarea rows={3} value={thought}
+            onChange={function(e){setThought(e.target.value);}}
+            placeholder="Write the thought you are struggling with..."
+            style={Object.assign({},taStyle,{background:"rgba(255,255,255,0.05)",fontSize:15,fontStyle:"italic"})}
+          />
+        </div>
+
+        {/* WHAT LIE ARE YOU BELIEVING */}
+        <div style={cardStyle}>
+          <div style={labelStyle}>What lie are you believing?</div>
+          <textarea rows={3} value={lieText}
+            onChange={function(e){setLieText(e.target.value);}}
+            placeholder="Name the lie as clearly as you can..."
+            style={taStyle}
+          />
+        </div>
+
+        {/* ROOT CAUSE DROPDOWN */}
+        <div style={cardStyle}>
+          <div style={labelStyle}>What is the root cause of this thought?</div>
+          <select value={rootCause} onChange={function(e){setRootCause(e.target.value);}} style={dropStyle}>
+            {ROOT_CAUSES.map(function(opt){
+              return <option key={opt.value} value={opt.value} style={{background:"#0d1220",color:opt.value?"#e0d0b0":"rgba(200,180,140,0.5)"}}>{opt.label}</option>;
+            })}
+          </select>
+          {rootCause&&(
+            <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:WOUNDS[rootCause]?WOUNDS[rootCause].color:"#c4a85a",flexShrink:0}}/>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(200,180,130,0.7)",fontStyle:"italic"}}>
+                {rootCause==="fear"?"Fear is a spirit — not a fact. Greater is He in you.":
+                 rootCause==="doubt"?"Doubt invites you back to the Word. Let faith rise.":
+                 rootCause==="unbelief"?"Unbelief is the enemy of promise. Speak what God says.":
+                 rootCause==="comparison"?"Comparison is a thief. Your story is uniquely His.":
+                 rootCause==="peoplePleasing"?"Pleasing people will cost you your identity. You answer to One.":
+                 "Naming the root is the first step toward healing it."}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* REFLECT DEEPLY header */}
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(200,170,100,0.4)",letterSpacing:3,marginBottom:14}}>REFLECT DEEPLY</div>
+
+        {/* Q1: WHERE DID THIS BELIEF COME FROM — dropdown */}
+        <div style={cardStyle}>
+          <div style={labelStyle}>Where did this belief first come from?</div>
+          <select value={beliefOrigin} onChange={function(e){setBeliefOrigin(e.target.value);}} style={dropStyle}>
+            {BELIEF_ORIGINS.map(function(opt){
+              return <option key={opt.value} value={opt.value} style={{background:"#0d1220",color:opt.value?"#e0d0b0":"rgba(200,180,140,0.5)"}}>{opt.label}</option>;
+            })}
+          </select>
+          {beliefOrigin&&(
+            <div style={{marginTop:10,fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(200,180,130,0.6)",fontStyle:"italic"}}>
+              {beliefOrigin==="childhood"?"Many deep beliefs are planted in our earliest years. God wants to heal what was sown then.":
+               beliefOrigin==="trauma"?"Trauma can wire our minds to expect the worst. But God rewires what was broken.":
+               beliefOrigin==="rejection"?"Rejection wound deep — but you were accepted in the Beloved before the foundation of the world.":
+               beliefOrigin==="fear"?"Fear has a voice. But God's voice is louder. Perfect love casts out fear.":
+               beliefOrigin==="shame"?"Shame says hide. God says come. He has never turned away the one who came to Him.":
+               beliefOrigin==="comparison"?"Comparison steals your story. God wrote yours on purpose and with purpose.":
+               beliefOrigin==="family"?"What we grow up hearing shapes what we believe. God can speak over every generational voice.":
+               beliefOrigin==="churchHurt"?"Church hurt is real and it cuts deep. God is not the wound — He is the healer of it.":
+               beliefOrigin==="betrayal"?"Betrayal teaches the heart not to trust. God's faithfulness never wavers.":
+               beliefOrigin==="failure"?"Failure is not your identity. You are not what you did or did not do.":
+               beliefOrigin==="socialMedia"?"Social media is a highlight reel. Your real life is seen and valued by God.":
+               beliefOrigin==="performance"?"You were not made to perform for love. You were made to receive it freely.":
+               beliefOrigin==="loneliness"?"Loneliness can make the lies louder. God says you are never truly alone.":
+               beliefOrigin==="bullying"?"Words spoken in cruelty were never God's words over you. He speaks life.":
+               beliefOrigin==="wordsSpoken"?"Words shape us. But God's Word reshapes everything that was spoken in darkness.":
+               beliefOrigin==="abandonment"?"Abandonment is one of the deepest wounds. God will never leave nor forsake you.":
+               beliefOrigin==="perfectionism"?"Perfectionism is performance wearing a mask. Grace frees you from it all.":
+               beliefOrigin==="cultural"?"Culture has expectations. God has a calling — and they are not the same thing.":
+               beliefOrigin==="generational"?"What was passed down does not have to be passed on. You can break the cycle.":
+               "God sees the origin of every wound. Nothing is hidden from Him — and nothing is beyond His healing."}
+            </div>
+          )}
+        </div>
+
+        {/* Q2: WHO FIRST MADE YOU FEEL THIS WAY */}
+        <div style={cardStyle}>
+          <div style={labelStyle}>Who first made you feel this way?</div>
+          <textarea rows={2} value={whoAnswer}
+            onChange={function(e){setWhoAnswer(e.target.value);}}
+            placeholder="Reflect here..."
+            style={taStyle}
+          />
+        </div>
+
+        {/* Q3: WHAT MEMORY KEEPS THIS LIE ALIVE */}
+        <div style={cardStyle}>
+          <div style={labelStyle}>What memory keeps this lie alive?</div>
+          <textarea rows={2} value={memoryAnswer}
+            onChange={function(e){setMemoryAnswer(e.target.value);}}
+            placeholder="Reflect here..."
+            style={taStyle}
+          />
+        </div>
+
+        {/* IS THIS ALIGNED WITH GOD'S WORD — always clickable yes/no */}
+        <div style={Object.assign({},cardStyle,{marginBottom:20})}>
+          <div style={labelStyle}>Is this belief aligned with God's Word?</div>
+          <div style={{display:"flex",gap:12}}>
+            <button onClick={function(){setAligned("yes");}} style={{
+              flex:1,padding:"14px",borderRadius:12,cursor:"pointer",
+              background:aligned==="yes"?"rgba(107,175,154,0.3)":"rgba(255,255,255,0.04)",
+              border:"1px solid "+(aligned==="yes"?"#6baf9a":"rgba(255,255,255,0.12)"),
+              color:aligned==="yes"?"#6baf9a":"rgba(200,180,130,0.6)",
+              fontFamily:"'Cinzel', serif",fontSize:15,letterSpacing:2,
+              transition:"all 0.2s",fontWeight:aligned==="yes"?600:400
+            }}>Yes</button>
+            <button onClick={function(){setAligned("no");}} style={{
+              flex:1,padding:"14px",borderRadius:12,cursor:"pointer",
+              background:aligned==="no"?"rgba(212,130,122,0.3)":"rgba(255,255,255,0.04)",
+              border:"1px solid "+(aligned==="no"?"#d4827a":"rgba(255,255,255,0.12)"),
+              color:aligned==="no"?"#d4827a":"rgba(200,180,130,0.6)",
+              fontFamily:"'Cinzel', serif",fontSize:15,letterSpacing:2,
+              transition:"all 0.2s",fontWeight:aligned==="no"?600:400
+            }}>No</button>
+          </div>
+          {aligned==="yes"&&(
+            <div style={{marginTop:12,padding:"10px 12px",background:"rgba(107,175,154,0.1)",borderRadius:10,borderLeft:"2px solid #6baf9a",fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(107,175,154,0.95)",lineHeight:1.6,fontStyle:"italic"}}>
+              Hold onto what God says. Let His Word be your anchor today.
+            </div>
+          )}
+          {aligned==="no"&&(
+            <div style={{marginTop:12,padding:"10px 12px",background:"rgba(212,130,122,0.1)",borderRadius:10,borderLeft:"2px solid #d4827a",fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(212,130,122,0.95)",lineHeight:1.6,fontStyle:"italic"}}>
+              This is a lie of the enemy. You are ready to replace it with truth. ⚔
+            </div>
+          )}
+        </div>
+
+        <button onClick={function(){onNext(rootCause);}} style={{
+          width:"100%",marginTop:4,padding:"16px",
+          background:"linear-gradient(135deg, "+w.color+"44, "+w.color+"22)",
+          border:"1px solid "+w.color+"66",borderRadius:14,
+          color:"#f0e8d8",fontFamily:"'Cinzel', serif",fontSize:14,
+          cursor:"pointer",letterSpacing:2,
+          boxShadow:"0 4px 20px "+w.color+"22"
+        }}>
+          ⚔ Choose Your Weapon
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SCRIPTURE BATTLE ─────────────────────────────────────────────────────────
+function ScriptureBattle({wound,thought,rootCause,onVictory}){
+  var w=WOUNDS[wound]||WOUNDS.shame;
+  var [chosen,setChosen]=useState(null);
+  var [battling,setBattling]=useState(false);
+  var [won,setWon]=useState(false);
+
+  // Use root-cause scriptures if available, fall back to wound scriptures
+  var scriptures=(rootCause&&ROOT_CAUSE_SCRIPTURES[rootCause])||w.scriptures;
+  var sourceLabel=rootCause&&ROOT_CAUSE_SCRIPTURES[rootCause]
+    ? (ROOT_CAUSES.find(function(r){return r.value===rootCause;})||{}).label||rootCause
+    : w.label;
+
+  function battle(){if(!chosen)return;setBattling(true);setTimeout(function(){setWon(true);},1400);}
+  if(won)return <VictoryScene wound={wound} scripture={chosen} onComplete={onVictory}/>;
+
+  return(
+    <div style={{minHeight:"100vh",padding:"32px 24px 120px",background:"linear-gradient(160deg, #0d1020 0%, #181028 50%, #0a0d1a 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles type="light" count={25}/>
+      <div style={{maxWidth:400,margin:"0 auto",position:"relative"}}>
+        <div style={{textAlign:"center",marginBottom:30}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:w.color,letterSpacing:4,marginBottom:10,opacity:0.8}}>CHOOSE YOUR WEAPON</div>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:20,color:"#f0e8d8",lineHeight:1.3,marginBottom:6}}>Draw the Sword of the Spirit</div>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,fontStyle:"italic",color:"rgba(200,180,140,0.6)"}}>"The sword of the Spirit, which is the word of God." — Eph 6:17</div>
+        </div>
+
+        {/* Source label — shows what the scriptures are aligned to */}
+        <div style={{background:w.dark+"cc",border:"1px solid "+w.color+"33",borderRadius:12,padding:"10px 16px",marginBottom:22,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:w.color,flexShrink:0}}/>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(200,180,130,0.8)",fontStyle:"italic"}}>
+            Scriptures chosen for: <span style={{color:w.color,fontWeight:600}}>{sourceLabel}</span>
+          </div>
+        </div>
+
+        {scriptures.map(function(s,i){
+          var isChosen=chosen&&chosen.ref===s.ref;
+          return(
+            <button key={i} onClick={function(){setChosen(s);}} style={{
+              width:"100%",marginBottom:14,padding:"20px",textAlign:"left",
+              background:isChosen?w.color+"22":"rgba(255,255,255,0.03)",
+              border:"1px solid "+(isChosen?w.color:w.color+"33"),
+              borderRadius:16,cursor:"pointer",transition:"all 0.25s",
+              animation:isChosen?"glow 2s ease-in-out infinite":"none"
+            }}>
+              {s.power&&<div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:w.color,letterSpacing:3,marginBottom:8}}>{s.power}</div>}
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:15,color:"#e8d8b8",lineHeight:1.75,marginBottom:10,fontStyle:"italic"}}>"{s.text}"</div>
+              <div style={{fontFamily:"'Cinzel', serif",fontSize:11,color:isChosen?w.color:"rgba(200,170,100,0.6)",letterSpacing:1}}>— {s.ref}</div>
+            </button>
+          );
+        })}
+
+        <button onClick={battle} disabled={!chosen||battling} style={{
+          width:"100%",marginTop:8,padding:"18px",
+          background:chosen?"linear-gradient(135deg, "+w.color+"55, "+w.color+"33)":"rgba(255,255,255,0.04)",
+          border:"1px solid "+(chosen?w.color:"rgba(255,255,255,0.08)"),
+          borderRadius:14,color:chosen?"#f0e8d8":"rgba(200,180,140,0.3)",
+          fontFamily:"'Cinzel', serif",fontSize:15,cursor:chosen?"pointer":"default",
+          letterSpacing:2,animation:battling?"attackShake 0.6s ease":"none"
+        }}>
+          {battling?"⚔ Striking the Lie...":"⚔ Wield This Truth"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── VICTORY SCENE ────────────────────────────────────────────────────────────
+function VictoryScene({wound,scripture,onComplete}){
+  var w=WOUNDS[wound]||WOUNDS.shame;
+  var [declaration,setDeclaration]=useState("");
+  var [phase,setPhase]=useState(0);
+  var [showScience,setShowScience]=useState(false);
+  useEffect(function(){setTimeout(function(){setPhase(1);},400);setTimeout(function(){setPhase(2);},1000);},[]);
+
+  if(showScience)return(
+    <SciencePopup wound={wound} onContinue={function(){onComplete({scripture:scripture,declaration:declaration,wound:wound});}}/>
+  );
+
+  return(
+    <div style={{minHeight:"100vh",padding:"40px 24px 120px",background:"radial-gradient(ellipse at 50% 30%, "+w.dark+" 0%, #050810 70%)",position:"relative",overflow:"hidden",textAlign:"center"}}>
+      <Particles type="light" count={40}/>
+      <div style={{position:"fixed",top:"20%",left:"50%",transform:"translateX(-50%)",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle, "+w.color+"18 0%, transparent 70%)",animation:"pulse 2s ease-in-out infinite",pointerEvents:"none"}}/>
+      <div style={{maxWidth:380,margin:"0 auto",position:"relative"}}>
+        <div style={{fontSize:64,marginBottom:16,animation:phase>=1?"victoryPulse 1.5s ease-in-out infinite":"none"}}>✦</div>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:11,color:w.color,letterSpacing:4,marginBottom:12,opacity:0.9,animation:phase>=1?"slideUp 0.6s ease both":"none"}}>VICTORY DECLARED</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:24,color:"#f5ead0",marginBottom:8,lineHeight:1.3,animation:phase>=1?"slideUp 0.6s ease 0.2s both":"none"}}>The Lie Has Fallen</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,fontStyle:"italic",color:"rgba(200,180,130,0.7)",marginBottom:32,animation:phase>=1?"slideUp 0.6s ease 0.4s both":"none"}}>"Greater is He who is in you than he who is in the world." — 1 John 4:4</div>
+        {scripture&&(
+          <div style={{background:w.color+"18",border:"1px solid "+w.color+"55",borderRadius:18,padding:"20px",marginBottom:28,animation:phase>=2?"slideUp 0.6s ease 0.5s both":"none"}}>
+            <div style={{fontFamily:"'Crimson Pro', serif",fontSize:17,fontStyle:"italic",color:"#f0e8d0",lineHeight:1.8,marginBottom:12}}>"{scripture.text}"</div>
+            <div style={{fontFamily:"'Cinzel', serif",fontSize:12,color:w.color,letterSpacing:1}}>— {scripture.ref}</div>
+          </div>
+        )}
+        <div style={{textAlign:"left",marginBottom:24,animation:phase>=2?"slideUp 0.6s ease 0.7s both":"none"}}>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,color:"rgba(200,180,140,0.8)",marginBottom:10}}>Write your declaration of victory:</div>
+          <textarea rows={3} value={declaration} onChange={function(e){setDeclaration(e.target.value);}} placeholder="I declare that I am..."
+            style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid "+w.color+"44",borderRadius:12,padding:"12px 14px",color:"#e8d8b8",fontFamily:"'Crimson Pro', serif",fontSize:16,resize:"none",outline:"none",lineHeight:1.6}}
+          />
+        </div>
+        <div style={{textAlign:"left",marginBottom:32,animation:phase>=2?"slideUp 0.6s ease 0.9s both":"none"}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(200,180,140,0.5)",letterSpacing:3,marginBottom:14}}>SEAL THE VICTORY</div>
+          {["🙏 Pray this scripture aloud","🎵 Worship until the heaviness lifts","🙌 Give thanks — even before you feel it","📖 Meditate on this truth today"].map(function(item,i){
+            return <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.06)",fontFamily:"'Crimson Pro', serif",fontSize:14,color:"rgba(220,200,160,0.8)"}}>{item}</div>;
+          })}
+        </div>
+        <button onClick={function(){setShowScience(true);}} style={{
+          width:"100%",padding:"18px",
+          background:"linear-gradient(135deg, "+w.color+"55, "+w.color+"33)",
+          border:"1px solid "+w.color+"88",borderRadius:14,
+          color:"#f5ead0",fontFamily:"'Cinzel', serif",fontSize:14,
+          cursor:"pointer",letterSpacing:2,
+          boxShadow:"0 8px 32px "+w.color+"33",
+          animation:"glow 2s ease-in-out infinite"
+        }}>
+          ✦ Return to the Kingdom
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── WORLD MAP ────────────────────────────────────────────────────────────────
+function WorldMap({onSelectZone,onBattle,entries}){
+  var [hoveredZone,setHoveredZone]=useState(null);
+  var completedCount=entries.filter(function(e){return e.completed;}).length;
+  var zones=getUnlockedZones(completedCount);
+  // Find the most recently unlocked zone to highlight it
+  var newestUnlock=null;
+  for(var i=ALL_ZONES.length-1;i>=0;i--){
+    if(ALL_ZONES[i].unlockAt>0&&completedCount>=ALL_ZONES[i].unlockAt&&completedCount<ALL_ZONES[i].unlockAt+1){
+      newestUnlock=ALL_ZONES[i].id;break;
+    }
+  }
+  // Next unlock threshold
+  var nextLock=ALL_ZONES.find(function(z){return z.unlockAt>completedCount;});
+
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg, #080c18 0%, #0d1020 40%, #080a14 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles count={35}/>
+      <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
+        {Array.from({length:60}).map(function(_,i){return <div key={i} style={{position:"absolute",left:Math.random()*100+"%",top:Math.random()*60+"%",width:Math.random()*2+0.5,height:Math.random()*2+0.5,borderRadius:"50%",background:"rgba(255,255,255,0.8)",animation:"starTwinkle "+(Math.random()*4+3)+"s ease-in-out infinite",animationDelay:Math.random()*6+"s"}}/>;
+        })}
+      </div>
+      <div style={{textAlign:"center",padding:"48px 24px 28px",position:"relative"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(180,160,100,0.7)",letterSpacing:4,marginBottom:12}}>YOUR KINGDOM</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:30,fontWeight:700,color:"#f5ead0",marginBottom:8,lineHeight:1.2}}>Kingdom Quest</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:15,fontStyle:"italic",color:"rgba(200,180,130,0.7)"}}>"For we do not wrestle against flesh and blood..." — Eph 6:12</div>
+        <div style={{width:80,height:1,background:"rgba(180,160,100,0.3)",margin:"18px auto"}}/>
+      </div>
+      <div style={{margin:"0 20px 22px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(180,160,100,0.2)",borderRadius:18,padding:"18px 20px"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,160,100,0.6)",letterSpacing:3,marginBottom:10}}>TODAY'S DECLARATION</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:17,fontStyle:"italic",color:"#e8d8b0",lineHeight:1.6}}>"{DAILY_DECLARATIONS[todayIdx()]}"</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,margin:"0 20px 26px"}}>
+        {[{icon:"⚔",label:"Battles Won",value:completedCount,color:"#c4a85a"},{icon:"🛡",label:"Lies Captured",value:entries.length,color:"#9b82c4"},{icon:"✦",label:"Zones Open",value:zones.filter(function(z){return z.unlocked;}).length,color:"#6baf9a"}].map(function(s){return(
+          <div key={s.label} style={{background:"rgba(255,255,255,0.04)",border:"1px solid "+s.color+"33",borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+            <div style={{fontSize:22,marginBottom:4}}>{s.icon}</div>
+            <div style={{fontFamily:"'Cinzel', serif",fontSize:22,color:s.color,fontWeight:600}}>{s.value}</div>
+            <div style={{fontFamily:"'Crimson Pro', serif",fontSize:10,color:"rgba(200,180,130,0.5)",marginTop:2}}>{s.label}</div>
+          </div>
+        );})}
+      </div>
+
+      {/* Next unlock progress */}
+      {nextLock&&(
+        <div style={{margin:"0 20px 20px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(180,160,100,0.15)",borderRadius:14,padding:"14px 16px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+            <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(200,180,130,0.6)"}}>
+              Next unlock: <span style={{color:nextLock.color}}>{nextLock.icon} {nextLock.name}</span>
+            </div>
+            <div style={{fontFamily:"'Cinzel', serif",fontSize:11,color:"rgba(180,160,100,0.5)"}}>
+              {completedCount}/{nextLock.unlockAt} battles
+            </div>
+          </div>
+          <div style={{height:4,background:"rgba(255,255,255,0.06)",borderRadius:4}}>
+            <div style={{height:"100%",background:"linear-gradient(90deg,#c4a85a,#9b82c4)",borderRadius:4,width:Math.min((completedCount/nextLock.unlockAt)*100,100)+"%",transition:"width 0.6s ease"}}/>
+          </div>
+        </div>
+      )}
+
+      <div style={{margin:"0 20px 26px"}}>
+        <button onClick={onBattle} style={{width:"100%",padding:"20px",background:"linear-gradient(135deg, rgba(155,130,196,0.3), rgba(107,175,154,0.2))",border:"1px solid rgba(155,130,196,0.5)",borderRadius:18,color:"#f0e8d0",fontFamily:"'Cinzel', serif",fontSize:16,cursor:"pointer",letterSpacing:2,boxShadow:"0 8px 40px rgba(155,130,196,0.2)",animation:"glow 3s ease-in-out infinite"}}>
+          ⚔ Enter Battle — Capture a Thought
+        </button>
+      </div>
+      <div style={{padding:"0 20px"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,160,100,0.5)",letterSpacing:3,marginBottom:16}}>EXPLORE THE KINGDOM</div>
+        {zones.map(function(zone){
+          var isNew=zone.id===newestUnlock;
+          return(
+            <button key={zone.id} onClick={function(){zone.unlocked&&onSelectZone(zone);}}
+              style={{width:"100%",marginBottom:12,padding:"18px 20px",textAlign:"left",
+                background:isNew?"rgba(196,168,90,0.08)":hoveredZone===zone.id?"rgba(255,255,255,0.06)":"rgba(255,255,255,0.03)",
+                border:"1px solid "+(zone.unlocked?(isNew?"rgba(196,168,90,0.5)":zone.color+"44"):"rgba(255,255,255,0.06)"),
+                borderRadius:16,cursor:zone.unlocked?"pointer":"default",
+                display:"flex",alignItems:"center",gap:16,transition:"all 0.2s",
+                opacity:zone.unlocked?1:0.38,
+                animation:isNew?"glow 2s ease-in-out infinite":"none"
+              }}
+              onMouseEnter={function(){setHoveredZone(zone.id);}}
+              onMouseLeave={function(){setHoveredZone(null);}}>
+              <div style={{width:48,height:48,borderRadius:12,fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",background:zone.color+"22",border:"1px solid "+zone.color+"44",flexShrink:0}}>{zone.icon}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <div style={{fontFamily:"'Cinzel', serif",fontSize:14,color:zone.unlocked?"#f0e0c0":"rgba(200,180,130,0.4)"}}>{zone.name}</div>
+                  {isNew&&<div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:8,color:"#c4a85a",background:"rgba(196,168,90,0.15)",border:"1px solid rgba(196,168,90,0.3)",borderRadius:8,padding:"2px 6px",letterSpacing:1,flexShrink:0}}>NEW</div>}
+                  {!zone.unlocked&&zone.unlockAt>0&&<div style={{fontFamily:"'Crimson Pro', serif",fontSize:10,color:"rgba(180,160,100,0.4)",marginLeft:"auto",flexShrink:0}}>{zone.unlockAt} battles</div>}
+                </div>
+                <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(200,180,130,0.5)",fontStyle:"italic"}}>{zone.unlocked?zone.desc:"Unlock at "+zone.unlockAt+" battles won"}</div>
+              </div>
+              {zone.unlocked&&<div style={{color:zone.color+"88",fontSize:18,flexShrink:0}}>›</div>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── HEALING GARDEN ───────────────────────────────────────────────────────────
+function HealingGarden({entries,onBack}){
+  const healed=entries.filter(function(e){return e.completed;});
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg,#081808 0%,#0a1a0c 50%,#050f06 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles count={30}/>
+      <div style={{padding:"40px 24px",textAlign:"center"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"#6baf9a",letterSpacing:4,marginBottom:12,opacity:0.8}}>THE HEALING GARDEN</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:26,color:"#e8f0d0",marginBottom:8}}>Where Truth Blooms</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,fontStyle:"italic",color:"rgba(150,200,140,0.6)",marginBottom:32}}>"He makes me lie down in green pastures." — Psalm 23:2</div>
+      </div>
+      {healed.length===0?(<div style={{textAlign:"center",padding:"40px 24px",fontFamily:"'Crimson Pro', serif",fontSize:16,color:"rgba(150,200,140,0.5)",fontStyle:"italic"}}>Your garden awaits its first bloom.<br/>Win a battle to plant a seed here.</div>):(
+        <div style={{padding:"0 20px"}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(150,200,140,0.5)",letterSpacing:3,marginBottom:16}}>YOUR VICTORIES IN BLOOM</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {healed.map(function(e,i){var w=WOUNDS[e.wound]||WOUNDS.shame;var flowers=["🌸","🌺","🌻","🌹","🌷","🌼","💐"];return(
+              <div key={i} style={{background:w.color+"18",border:"1px solid "+w.color+"44",borderRadius:16,padding:"16px 14px",textAlign:"center"}}>
+                <div style={{fontSize:32,marginBottom:8,animation:"float 3s ease-in-out infinite",animationDelay:i*0.5+"s"}}>{flowers[i%flowers.length]}</div>
+                <div style={{fontFamily:"'Crimson Pro', serif",fontSize:11,color:w.color,fontStyle:"italic",lineHeight:1.4}}>"{e.thought&&e.thought.slice(0,40)}{e.thought&&e.thought.length>40?"...":""}"</div>
+                <div style={{fontFamily:"'Cinzel', serif",fontSize:10,color:"rgba(150,200,140,0.5)",marginTop:6}}>Healed</div>
+              </div>
+            );})}
+          </div>
+        </div>
+      )}
+      <div style={{padding:"24px 20px 0",textAlign:"center"}}><button onClick={onBack} style={{padding:"12px 28px",borderRadius:20,border:"1px solid rgba(107,175,154,0.4)",background:"rgba(107,175,154,0.1)",color:"rgba(200,220,180,0.8)",fontFamily:"'Crimson Pro', serif",fontSize:14,cursor:"pointer"}}>← Return to Kingdom</button></div>
+    </div>
+  );
+}
+
+// ─── THRONE ROOM ──────────────────────────────────────────────────────────────
+function ThroneRoom({onBack}){
+  const [prayerText,setPrayerText]=useState("");
+  const [submitted,setSubmitted]=useState(false);
+  const [companion,setCompanion]=useState(rand(COMPANION_LINES));
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg,#1a140a 0%,#100c18 50%,#0a0808 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles count={25}/>
+      <div style={{position:"fixed",top:"25%",left:"50%",transform:"translateX(-50%)",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle, rgba(196,168,90,0.08) 0%, transparent 70%)",pointerEvents:"none",animation:"pulse 4s ease-in-out infinite"}}/>
+      <div style={{padding:"40px 24px 0",textAlign:"center"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"#c4a85a",letterSpacing:4,marginBottom:12,opacity:0.8}}>THE THRONE ROOM</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:26,color:"#f5ead0",marginBottom:8}}>Come Before the Father</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,fontStyle:"italic",color:"rgba(200,170,100,0.6)",marginBottom:32}}>"Let us come boldly to the throne of grace." — Hebrews 4:16</div>
+      </div>
+      <div style={{padding:"0 20px",maxWidth:400,margin:"0 auto"}}>
+        <div style={{background:"rgba(196,168,90,0.08)",border:"1px solid rgba(196,168,90,0.25)",borderRadius:18,padding:"18px 20px",marginBottom:24}}>
+          <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"#c4a85a",letterSpacing:3,marginBottom:10}}>THE COMPANION SPEAKS</div>
+          <div style={{fontFamily:"'Crimson Pro', serif",fontSize:16,fontStyle:"italic",color:"#e8d8b0",lineHeight:1.7}}>{companion}</div>
+          <button onClick={function(){setCompanion(rand(COMPANION_LINES));}} style={{marginTop:12,background:"none",border:"1px solid rgba(196,168,90,0.3)",borderRadius:20,padding:"6px 14px",color:"rgba(200,170,100,0.7)",fontFamily:"'Crimson Pro', serif",fontSize:12,cursor:"pointer"}}>Hear another word →</button>
+        </div>
+        {[{title:"Worship",icon:"🎵",prompt:"Put on a worship song. Let the atmosphere shift. God inhabits the praises of His people.",color:"#9b82c4"},{title:"Thanksgiving",icon:"🙌",prompt:"Name 3 things you are grateful for. No matter how small. Gratitude rewires the mind.",color:"#6baf9a"},{title:"Declarations",icon:"📣",prompt:"I am chosen. I am loved. I am not condemned. I am more than a conqueror. Greater is He in me.",color:"#c4a85a"}].map(function(t,i){return(
+          <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid "+t.color+"33",borderRadius:16,padding:"16px 18px",marginBottom:14}}>
+            <div style={{fontFamily:"'Cinzel', serif",fontSize:13,color:t.color,marginBottom:8}}>{t.icon} {t.title}</div>
+            <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,color:"rgba(220,200,160,0.8)",lineHeight:1.7,fontStyle:"italic"}}>{t.prompt}</div>
+          </div>
+        );})}
+        <div style={{marginBottom:24}}>
+          <div style={{fontFamily:"'Cinzel', serif",fontSize:13,color:"rgba(200,180,130,0.8)",marginBottom:10}}>🙏 Prayer Journal</div>
+          {!submitted?(
+            <div>
+              <textarea rows={5} value={prayerText} onChange={function(e){setPrayerText(e.target.value);}} placeholder="Pour your heart out to the Father here..." style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(196,168,90,0.33)",borderRadius:14,padding:"14px",color:"#e8d8b0",fontFamily:"'Crimson Pro', serif",fontSize:15,resize:"none",outline:"none",lineHeight:1.7}}/>
+              <button onClick={function(){prayerText&&setSubmitted(true);}} style={{width:"100%",marginTop:12,padding:"14px",background:prayerText?"rgba(196,168,90,0.2)":"rgba(255,255,255,0.04)",border:"1px solid "+(prayerText?"rgba(196,168,90,0.5)":"rgba(255,255,255,0.08)"),borderRadius:12,color:prayerText?"#f0e0c0":"rgba(200,180,130,0.3)",fontFamily:"'Cinzel', serif",fontSize:13,cursor:prayerText?"pointer":"default",letterSpacing:1}}>Offer this prayer ✦</button>
+            </div>
+          ):(
+            <div style={{background:"rgba(196,168,90,0.1)",border:"1px solid rgba(196,168,90,0.3)",borderRadius:14,padding:"16px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:16,fontStyle:"italic",color:"#f0e0c0",marginBottom:6}}>Your prayer has been offered. ✦</div>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(200,170,100,0.6)"}}>He hears. He answers. He is near.</div>
+            </div>
+          )}
+        </div>
+        <button onClick={onBack} style={{width:"100%",padding:"12px",borderRadius:12,border:"1px solid rgba(196,168,90,0.3)",background:"transparent",color:"rgba(200,170,100,0.6)",fontFamily:"'Crimson Pro', serif",fontSize:14,cursor:"pointer"}}>← Return to Kingdom</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── DARK VALLEY ─────────────────────────────────────────────────────────────
+function DarkValley({onBack,onBattle}){
+  var challenges=[{title:"The Mirror of Lies",desc:"Face the distorted image the enemy shows you.",icon:"🪞",wound:"shame"},{title:"The Voice of Rejection",desc:"Someone's words still echo. Take them captive.",icon:"👂",wound:"rejection"},{title:"The Fog of Abandonment",desc:"When it feels like God has gone silent.",icon:"🌫",wound:"abandonment"},{title:"The Cage of Performance",desc:"Break free from the approval trap.",icon:"⛓",wound:"validation"},{title:"The Shadow of Isolation",desc:"Discover you are never truly alone.",icon:"🌑",wound:"loneliness"},{title:"The Spirit of Fear",desc:"Confront the dread that steals your peace.",icon:"⚡",wound:"fear"},{title:"The Fog of Doubt",desc:"When faith feels impossible — hold on.",icon:"🌀",wound:"doubt"},{title:"The Wall of Comparison",desc:"Reclaim your unique story in Him.",icon:"⚖",wound:"comparison"}];
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg,#0a0a18 0%,#080810 50%,#050508 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles type="dark" count={20}/>
+      <div style={{padding:"40px 24px 0",textAlign:"center"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(100,100,200,0.7)",letterSpacing:4,marginBottom:12}}>THE DARK VALLEY</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:26,color:"#d8d0f0",marginBottom:8}}>Face the Shadows</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,fontStyle:"italic",color:"rgba(150,140,200,0.6)",marginBottom:32}}>"Yea, though I walk through the valley... I will fear no evil." — Psalm 23:4</div>
+      </div>
+      <div style={{padding:"0 20px"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(150,140,200,0.4)",letterSpacing:3,marginBottom:16}}>CHOOSE YOUR CHALLENGE</div>
+        {challenges.map(function(c,i){var w=WOUNDS[c.wound]||WOUNDS.shame;return(
+          <button key={i} onClick={function(){onBattle(c.wound);}} style={{width:"100%",marginBottom:12,padding:"18px 20px",textAlign:"left",background:"rgba(255,255,255,0.03)",border:"1px solid "+w.color+"33",borderRadius:16,cursor:"pointer",display:"flex",alignItems:"center",gap:14,transition:"all 0.2s"}}>
+            <div style={{width:48,height:48,borderRadius:12,fontSize:24,display:"flex",alignItems:"center",justifyContent:"center",background:w.color+"18",border:"1px solid "+w.color+"33",flexShrink:0}}>{c.icon}</div>
+            <div>
+              <div style={{fontFamily:"'Cinzel', serif",fontSize:13,color:"#d8d0e8",marginBottom:4}}>{c.title}</div>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,color:"rgba(180,170,210,0.5)",fontStyle:"italic",lineHeight:1.4}}>{c.desc}</div>
+            </div>
+            <div style={{marginLeft:"auto",color:w.color+"66",fontSize:18}}>›</div>
+          </button>
+        );})}
+      </div>
+      <div style={{padding:"24px 20px 0",textAlign:"center"}}><button onClick={onBack} style={{padding:"12px 28px",borderRadius:20,border:"1px solid rgba(100,100,200,0.3)",background:"rgba(100,100,200,0.08)",color:"rgba(180,170,210,0.7)",fontFamily:"'Crimson Pro', serif",fontSize:14,cursor:"pointer"}}>← Return to Kingdom</button></div>
+    </div>
+  );
+}
+
+// ─── AVATAR / IDENTITY SCREEN ─────────────────────────────────────────────────
+function AvatarScreen({avatar,entries,onBack}){
+  var completed=entries.filter(function(e){return e.completed;}).length;
+  var woundCounts={};entries.forEach(function(e){woundCounts[e.wound]=(woundCounts[e.wound]||0)+1;});
+  var level=Math.floor(completed/2)+1;
+  var xp=(completed%2)*50;
+  var title=AVATAR_NAMES[Math.min(Math.floor(completed/3),AVATAR_NAMES.length-1)];
+  var arch=AVATAR_ARCHETYPES.find(function(a){return avatar&&a.id===avatar.archetype.id;})||AVATAR_ARCHETYPES[0];
+  var attrs=[{name:"Wisdom",value:Math.min(entries.length*12,100),color:"#c4a85a"},{name:"Discernment",value:Math.min(completed*15,100),color:"#9b82c4"},{name:"Peace",value:Math.min(completed*18,100),color:"#6baf9a"},{name:"Identity",value:Math.min(entries.length*10,100),color:"#7ab5d4"},{name:"Spiritual Authority",value:Math.min(completed*20,100),color:"#d4827a"}];
+  var badges=[{id:"first",icon:"🗡",title:"Truth Seeker",unlocked:entries.length>=1},{id:"three",icon:"🌿",title:"Mind Renewed",unlocked:completed>=3},{id:"five",icon:"⚔",title:"Steadfast Warrior",unlocked:completed>=5},{id:"shame",icon:"🌸",title:"Shame Lifter",unlocked:!!woundCounts.shame},{id:"reject",icon:"💜",title:"Beloved",unlocked:!!woundCounts.rejection},{id:"abandon",icon:"🕊",title:"Not Forgotten",unlocked:!!woundCounts.abandonment},{id:"alone",icon:"✦",title:"Never Alone",unlocked:!!woundCounts.loneliness},{id:"king",icon:"👑",title:"Daughter of the King",unlocked:!!woundCounts.validation},{id:"ten",icon:"🏆",title:"Truth Walker",unlocked:completed>=10}];
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg,#0d0a18 0%,#100c1e 50%,#080610 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles count={20}/>
+      <div style={{padding:"40px 24px 0",textAlign:"center"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(180,160,220,0.7)",letterSpacing:4,marginBottom:16}}>YOUR IDENTITY</div>
+        <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
+          <div style={{width:100,height:100,borderRadius:"50%",background:"linear-gradient(135deg, "+arch.color+"40, "+arch.color+"20)",border:"2px solid "+arch.color+"66",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto",boxShadow:"0 0 40px "+arch.glow,animation:"orbFloat 6s ease-in-out infinite"}}>{arch.icon}</div>
+          <div style={{position:"absolute",bottom:-4,right:-4,background:"rgba(196,168,90,0.9)",borderRadius:20,padding:"2px 10px",fontFamily:"'Cinzel', serif",fontSize:11,color:"#1a1208"}}>Lv.{level}</div>
+        </div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:22,color:"#f0e8d0",marginBottom:2}}>{avatar?avatar.name:"Warrior"}</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:14,color:arch.color,fontStyle:"italic",marginBottom:4}}>{arch.name}</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:12,fontStyle:"italic",color:"rgba(200,180,140,0.5)",marginBottom:22}}>{title} · {completed} battles won</div>
+        <div style={{margin:"0 20px 28px",background:"rgba(255,255,255,0.06)",borderRadius:20,height:8,overflow:"hidden",border:"1px solid rgba(180,160,100,0.15)"}}>
+          <div style={{height:"100%",background:"linear-gradient(90deg,"+arch.color+",#c4a85a)",borderRadius:20,width:xp+"%",transition:"width 0.8s ease"}}/>
+        </div>
+      </div>
+      <div style={{padding:"0 20px"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,160,100,0.5)",letterSpacing:3,marginBottom:14}}>SPIRITUAL ATTRIBUTES</div>
+        {attrs.map(function(a){return(
+          <div key={a.name} style={{marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(220,200,160,0.8)"}}>{a.name}</div>
+              <div style={{fontFamily:"'Cinzel', serif",fontSize:12,color:a.color}}>{a.value}</div>
+            </div>
+            <div style={{height:5,background:"rgba(255,255,255,0.06)",borderRadius:4}}>
+              <div style={{height:"100%",borderRadius:4,background:a.color,width:a.value+"%",transition:"width 0.8s ease"}}/>
+            </div>
+          </div>
+        );})}
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:9,color:"rgba(180,160,100,0.5)",letterSpacing:3,margin:"28px 0 16px"}}>IDENTITY BADGES</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:24}}>
+          {badges.map(function(b){return(
+            <div key={b.id} style={{background:b.unlocked?"rgba(196,168,90,0.12)":"rgba(255,255,255,0.02)",border:"1px solid "+(b.unlocked?"rgba(196,168,90,0.35)":"rgba(255,255,255,0.06)"),borderRadius:14,padding:"14px 10px",textAlign:"center",opacity:b.unlocked?1:0.3}}>
+              <div style={{fontSize:24,marginBottom:6}}>{b.icon}</div>
+              <div style={{fontFamily:"'Crimson Pro', serif",fontSize:10,color:b.unlocked?"#c4a85a":"rgba(200,180,130,0.4)",lineHeight:1.3}}>{b.title}</div>
+            </div>
+          );})}
+        </div>
+        <button onClick={onBack} style={{width:"100%",padding:"12px",borderRadius:12,border:"1px solid rgba(180,160,100,0.3)",background:"transparent",color:"rgba(200,180,130,0.6)",fontFamily:"'Crimson Pro', serif",fontSize:14,cursor:"pointer"}}>← Return to Kingdom</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── JOURNAL SCREEN ───────────────────────────────────────────────────────────
+function JournalScreen({entries,onBack}){
+  return(
+    <div style={{minHeight:"100vh",padding:"0 0 100px",background:"linear-gradient(180deg,#0a0c10 0%,#0d1018 100%)",position:"relative",overflow:"hidden"}}>
+      <Particles count={15}/>
+      <div style={{padding:"40px 24px 0",textAlign:"center"}}>
+        <div style={{fontFamily:"'Uncial Antiqua', serif",fontSize:10,color:"rgba(180,160,100,0.7)",letterSpacing:4,marginBottom:12}}>HEALING JOURNAL</div>
+        <div style={{fontFamily:"'Cinzel', serif",fontSize:26,color:"#f0e8d0",marginBottom:8}}>The Record of Battles</div>
+        <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,fontStyle:"italic",color:"rgba(200,180,130,0.5)",marginBottom:32}}>"Write the vision, make it plain." — Hab 2:2</div>
+      </div>
+      <div style={{padding:"0 20px"}}>
+        {entries.length===0?(
+          <div style={{textAlign:"center",padding:"40px",fontFamily:"'Crimson Pro', serif",fontSize:16,fontStyle:"italic",color:"rgba(200,180,130,0.4)"}}>No battles recorded yet.<br/>Your victories will be written here.</div>
+        ):(
+          entries.slice().reverse().map(function(e,i){var w=WOUNDS[e.wound]||WOUNDS.shame;return(
+            <div key={i} style={{background:"rgba(255,255,255,0.03)",border:"1px solid "+w.color+"33",borderRadius:18,padding:"18px 20px",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{fontSize:20,width:36,height:36,borderRadius:8,background:w.color+"22",border:"1px solid "+w.color+"44",display:"flex",alignItems:"center",justifyContent:"center"}}>{w.icon}</div>
+                <div>
+                  <div style={{fontFamily:"'Cinzel', serif",fontSize:11,color:w.color,letterSpacing:1}}>{w.label}</div>
+                  <div style={{fontFamily:"'Crimson Pro', serif",fontSize:10,color:"rgba(200,180,130,0.4)"}}>{e.date}</div>
+                </div>
+                {e.completed&&<div style={{marginLeft:"auto",fontFamily:"'Cinzel', serif",fontSize:9,color:"#6baf9a",background:"rgba(107,175,154,0.15)",padding:"3px 10px",borderRadius:20,letterSpacing:1}}>VICTORIOUS</div>}
+              </div>
+              {e.thought&&<div style={{fontFamily:"'Crimson Pro', serif",fontSize:15,fontStyle:"italic",color:"rgba(220,200,160,0.8)",marginBottom:10}}>"{e.thought}"</div>}
+              {e.scripture&&(
+                <div style={{background:w.color+"10",borderLeft:"2px solid "+w.color+"66",padding:"10px 14px",borderRadius:"0 10px 10px 0",marginBottom:8}}>
+                  <div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:"rgba(220,200,160,0.8)",lineHeight:1.6,fontStyle:"italic"}}>{e.scripture.text}</div>
+                  <div style={{fontFamily:"'Cinzel', serif",fontSize:10,color:w.color,marginTop:4}}>— {e.scripture.ref}</div>
+                </div>
+              )}
+              {e.declaration&&<div style={{fontFamily:"'Crimson Pro', serif",fontSize:13,color:w.color,fontStyle:"italic",marginTop:6}}>"{e.declaration}"</div>}
+            </div>
+          );})
+        )}
+        <button onClick={onBack} style={{width:"100%",padding:"12px",borderRadius:12,border:"1px solid rgba(180,160,100,0.2)",background:"transparent",color:"rgba(200,180,130,0.5)",fontFamily:"'Crimson Pro', serif",fontSize:14,cursor:"pointer",marginTop:8}}>← Return to Kingdom</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── NAV & BATTLE FLOW ────────────────────────────────────────────────────────
+const NAV=[{id:"world",icon:"🗺",label:"Kingdom"},{id:"avatar",icon:"✦",label:"Identity"},{id:"journal",icon:"📜",label:"Journal"},{id:"throne",icon:"🙏",label:"Throne"}];
+
+function BattleFlow({wound,onComplete,onCancel}){
+  var [phase,setPhase]=useState("attack");
+  var [activeWound,setActiveWound]=useState(wound||"shame");
+  var [thought,setThought]=useState("");
+  var [rootCause,setRootCause]=useState("");
+  if(phase==="attack")return <DarkCloudAttack wound={activeWound} onBegin={function(){setPhase("chamber");}}/>;
+  if(phase==="chamber")return <TruthChamber wound={activeWound} thought={thought} setThought={setThought} onBack={function(){setPhase("attack");}} onNext={function(rc){setRootCause(rc||"");setPhase("battle");}}/>;
+  return <ScriptureBattle wound={activeWound} thought={thought} rootCause={rootCause} onVictory={function(result){onComplete(Object.assign({},result,{thought:thought,wound:activeWound,rootCause:rootCause,date:new Date().toLocaleDateString(),completed:true}));}}/>;
+}
+
+// ─── ROOT APP ─────────────────────────────────────────────────────────────────
+export default function App(){
+  // appPhase: "avatar" | "story" | "game"
+  var [appPhase,setAppPhase]=useState("avatar");
+  var [avatar,setAvatar]=useState(null);
+  var [screen,setScreen]=useState("world");
+  var [zone,setZone]=useState(null);
+  var [battling,setBattling]=useState(false);
+  var [battleWound,setBattleWound]=useState(null);
+  var [entries,setEntries]=useState([]);
+
+  function handleAvatarComplete(av){setAvatar(av);setAppPhase("story");}
+  function handleStoryComplete(){setAppPhase("game");}
+  function startBattle(w){setBattleWound(w||"shame");setBattling(true);}
+  function handleBattleComplete(entry){setEntries(function(prev){return prev.concat([entry]);});setBattling(false);setBattleWound(null);setZone(null);setScreen("world");}
+
+  if(appPhase==="avatar")return <div><style>{GLOBAL_CSS}</style><AvatarCreation onComplete={handleAvatarComplete}/></div>;
+  if(appPhase==="story")return <div><style>{GLOBAL_CSS}</style><StorybookOpening avatar={avatar} onComplete={handleStoryComplete}/></div>;
+
+  if(battling)return <div><style>{GLOBAL_CSS}</style><BattleFlow wound={battleWound} onComplete={handleBattleComplete} onCancel={function(){setBattling(false);setBattleWound(null);}}/></div>;
+  if(zone==="garden")return <div><style>{GLOBAL_CSS}</style><HealingGarden entries={entries} onBack={function(){setZone(null);}}/></div>;
+  if(zone==="throne"||screen==="throne")return <div><style>{GLOBAL_CSS}</style><ThroneRoom onBack={function(){setZone(null);setScreen("world");}}/></div>;
+  if(zone==="valley")return <div><style>{GLOBAL_CSS}</style><DarkValley onBack={function(){setZone(null);}} onBattle={function(w){setZone(null);startBattle(w);}}/></div>;
+
+  var innerContent=function(){
+    if(screen==="avatar")return <AvatarScreen avatar={avatar} entries={entries} onBack={function(){setScreen("world");}}/>;
+    if(screen==="journal")return <JournalScreen entries={entries} onBack={function(){setScreen("world");}}/>;
+    return <WorldMap onSelectZone={function(z){setZone(z.id);}} onBattle={function(){startBattle("shame");}} entries={entries}/>;
+  };
+
+  return(
+    <div style={{maxWidth:430,margin:"0 auto",minHeight:"100vh",position:"relative"}}>
+      <style>{GLOBAL_CSS}</style>
+      {innerContent()}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(8,8,18,0.97)",backdropFilter:"blur(16px)",borderTop:"1px solid rgba(180,160,100,0.15)",display:"flex",justifyContent:"space-around",padding:"10px 0 20px",zIndex:200}}>
+        {NAV.map(function(item){var isActive=screen===item.id||(item.id==="throne"&&screen==="throne");return(
+          <button key={item.id} onClick={function(){setScreen(item.id);}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 16px"}}>
+            <div style={{fontSize:20,opacity:isActive?1:0.35,transition:"opacity 0.2s"}}>{item.icon}</div>
+            <div style={{fontFamily:"'Cinzel', serif",fontSize:9,letterSpacing:1,color:isActive?"#c4a85a":"rgba(200,180,130,0.3)",textTransform:"uppercase",transition:"color 0.2s"}}>{item.label}</div>
+          </button>
+        );})}
+      </div>
+    </div>
+  );
+}
